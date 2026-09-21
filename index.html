@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html{color-scheme:light dark}body{margin:0}[hidden]{display:none!important}</style>
+<title>Piano Ear Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --ground:    #F1F0EA;
+    --panel:     #FBFAF6;
+    --panel-2:   #E8E7DE;
+    --ink:       #1A1D19;
+    --ink-soft:  #5D625B;
+    --ink-faint: #8C9089;
+    --line:      #D9D8CF;
+    --signal:    #0F7A5F;
+    --warn:      #B4690E;
+    --miss:      #A93226;
+    --accent:    #165C6B;
+    --key-white: #FCFBF7;
+    --key-white-edge: #CFCEC4;
+    --key-black: #22261F;
+    --shadow: 0 1px 2px rgba(26,29,25,.07), 0 6px 18px rgba(26,29,25,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:    #121513;
+      --panel:     #1B1F1C;
+      --panel-2:   #252A26;
+      --ink:       #EBEDE7;
+      --ink-soft:  #9AA096;
+      --ink-faint: #6C7269;
+      --line:      #2E332E;
+      --signal:    #46C795;
+      --warn:      #DE9B3C;
+      --miss:      #E0655C;
+      --accent:    #4FA8BD;
+      --key-white: #D7D9D1;
+      --key-white-edge: #9A9D95;
+      --key-black: #0B0D0B;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:    #121513;
+    --panel:     #1B1F1C;
+    --panel-2:   #252A26;
+    --ink:       #EBEDE7;
+    --ink-soft:  #9AA096;
+    --ink-faint: #6C7269;
+    --line:      #2E332E;
+    --signal:    #46C795;
+    --warn:      #DE9B3C;
+    --miss:      #E0655C;
+    --accent:    #4FA8BD;
+    --key-white: #D7D9D1;
+    --key-white-edge: #9A9D95;
+    --key-black: #0B0D0B;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .wrap {
+    max-width: 720px;
+    min-width: 0;
+    margin: 0 auto;
+    padding-inline: 18px;
+    padding-block: 22px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* ---------- masthead ---------- */
+  .mast { display: flex; flex-direction: column; gap: 6px; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; font-weight: 500;
+    letter-spacing: .13em; text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-weight: 400; font-size: clamp(34px, 9vw, 48px);
+    line-height: 1.02; margin: 0; text-wrap: balance;
+    letter-spacing: -.01em;
+  }
+  .dek { color: var(--ink-soft); margin: 0; max-width: 52ch; }
+
+  /* ---------- readout panel ---------- */
+  .readout {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 20px 20px 18px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+
+  .note-row {
+    display: flex; align-items: baseline;
+    justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  }
+  .note-big {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-size: clamp(64px, 20vw, 108px);
+    line-height: .86;
+    letter-spacing: -.02em;
+    display: flex; align-items: baseline; gap: 2px;
+    transition: color .12s linear;
+    color: var(--ink-faint);
+  }
+  .note-big.live { color: var(--ink); }
+  .note-big .oct {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .3em; font-weight: 500;
+    color: var(--ink-soft);
+    letter-spacing: 0;
+  }
+  .hz-stack {
+    display: flex; flex-direction: column; gap: 3px;
+    text-align: right; margin-left: auto;
+  }
+  .hz {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 19px; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .micro {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--ink-faint);
+  }
+
+  /* ---------- cents meter ---------- */
+  .meter { display: flex; flex-direction: column; gap: 6px; }
+  .meter-track {
+    position: relative; height: 40px;
+    background: var(--panel-2);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .tick.center { width: 2px; background: var(--ink-faint); }
+  .tick.band { background: transparent; }
+  .in-band {
+    position: absolute; top: 0; bottom: 0;
+    left: 40%; width: 20%;
+    background: color-mix(in srgb, var(--signal) 13%, transparent);
+    border-left: 1px solid color-mix(in srgb, var(--signal) 35%, transparent);
+    border-right: 1px solid color-mix(in srgb, var(--signal) 35%, transparent);
+  }
+  .needle {
+    position: absolute; top: 4px; bottom: 4px; width: 4px;
+    margin-left: -2px; left: 50%;
+    background: var(--ink-faint);
+    border-radius: 2px;
+    transition: left .07s linear, background .12s linear, opacity .15s linear;
+    opacity: .3;
+  }
+  .needle.live { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .needle { transition: none; } }
+  .meter-legend {
+    display: flex; justify-content: space-between;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px; color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- level ---------- */
+  .level-row { display: flex; align-items: center; gap: 10px; }
+  .level-track {
+    flex: 1; height: 7px; border-radius: 4px;
+    background: var(--panel-2); overflow: hidden; position: relative;
+  }
+  .level-fill {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+    background: var(--accent); border-radius: 4px;
+    transition: width .06s linear;
+  }
+  .level-gate {
+    position: absolute; top: -3px; bottom: -3px; width: 2px;
+    background: var(--miss); left: 12%;
+  }
+
+  /* ---------- keyboard ---------- */
+  .kbd-shell {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .kbd-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; min-width: 0; max-width: 100%; }
+  .keys {
+    position: relative;
+    height: 128px;
+    min-width: 0;
+    display: flex;
+    background: var(--key-black);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .wk {
+    flex: 1 1 0; position: relative;
+    box-sizing: border-box;
+    background: var(--key-white);
+    border-right: 1px solid var(--key-black);
+    box-shadow: inset 0 -3px 0 var(--key-white-edge);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 5px;
+    transition: background .06s linear;
+  }
+  .wk:last-of-type { border-right: 0; }
+  .wk .lbl {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 9.5px; color: #6E7268;
+    pointer-events: none;
+  }
+  .bk {
+    position: absolute; top: 0;
+    height: 62%; width: 4.4%; margin-left: -2.2%;
+    background: var(--key-black);
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 2px 0 rgba(0,0,0,.35);
+    transition: background .06s linear;
+  }
+  .wk.on { background: var(--signal); }
+  .wk.on .lbl { color: rgba(255,255,255,.85); }
+  .bk.on { background: var(--signal); }
+  .kbd-foot {
+    display: flex; justify-content: space-between; gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ---------- heard log ---------- */
+  .log-shell { display: flex; flex-direction: column; gap: 9px; }
+  .log-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .log-strip {
+    display: flex; gap: 7px; overflow-x: auto;
+    min-width: 0; max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    min-height: 54px; padding-bottom: 4px;
+    align-items: stretch;
+  }
+  .chip {
+    flex: 0 0 auto;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 9px; padding: 7px 11px;
+    display: flex; flex-direction: column; gap: 1px;
+    min-width: 54px;
+  }
+  .chip b {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 16px; font-weight: 600; letter-spacing: -.01em;
+  }
+  .chip span {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10px; color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.sharp { border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); }
+  .chip.weak  { opacity: .58; }
+  .log-empty {
+    color: var(--ink-faint); font-size: 13px;
+    align-self: center; font-style: italic;
+  }
+
+  /* ---------- controls ---------- */
+  .controls { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
+  button {
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    padding: 11px 17px; border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink);
+    cursor: pointer; transition: background .12s, border-color .12s;
+  }
+  button:hover:not(:disabled) { background: var(--panel-2); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary {
+    background: var(--accent); border-color: var(--accent);
+    color: #FBFAF6; font-weight: 600;
+  }
+  :root[data-theme="dark"] button.primary,
+  :root:not([data-theme="light"]) button.primary { color: #0F1512; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) button.primary { color: #FBFAF6; }
+  }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .sens { display: flex; align-items: center; gap: 9px; flex: 1 1 200px; min-width: 180px; }
+  .sens input[type=range] { flex: 1; accent-color: var(--accent); min-width: 90px; }
+
+  /* ---------- status ---------- */
+  .status {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px; color: var(--ink-soft);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); flex: 0 0 auto; }
+  .dot.on { background: var(--signal); }
+  .dot.err { background: var(--miss); }
+
+  .alert {
+    border: 1px solid color-mix(in srgb, var(--miss) 40%, var(--line));
+    background: color-mix(in srgb, var(--miss) 8%, var(--panel));
+    border-radius: 11px; padding: 13px 15px;
+    font-size: 13.5px; color: var(--ink);
+  }
+  .alert b { display: block; margin-bottom: 3px; }
+
+  /* ---------- protocol / diagnostics ---------- */
+  .brief {
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .brief h2 {
+    font-family: "Instrument Serif", Georgia, serif;
+    font-weight: 400; font-size: 24px; margin: 0;
+  }
+  .brief p { margin: 0; color: var(--ink-soft); max-width: 62ch; }
+  .steps { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; counter-reset: s; }
+  .steps li {
+    display: grid; grid-template-columns: 26px 1fr; gap: 11px;
+    align-items: start; counter-increment: s;
+  }
+  .steps li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px; color: var(--accent); font-weight: 600;
+    padding-top: 3px; letter-spacing: .04em;
+  }
+  .steps li span { color: var(--ink-soft); }
+  .steps li span b { color: var(--ink); font-weight: 600; }
+
+  .diag {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+    gap: 1px; background: var(--line);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  }
+  .diag div { background: var(--panel); padding: 9px 11px; display: flex; flex-direction: column; gap: 2px; }
+  .diag dt, .diag .k {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .diag .v {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 14px; font-variant-numeric: tabular-nums; font-weight: 500;
+  }
+  .foot { font-size: 12.5px; color: var(--ink-faint); max-width: 62ch; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div class="eyebrow">Stage 01 &middot; Yamaha PSR-275</div>
+    <h1>Piano Ear Test</h1>
+    <p class="dek">Before we build lessons, we find out how well your phone hears your keyboard. Play a key — this page names the note it thinks it heard.</p>
+  </header>
+
+  <div id="alert" class="alert" hidden></div>
+
+  <section class="readout">
+    <div class="note-row">
+      <div class="note-big" id="noteBig">—</div>
+      <div class="hz-stack">
+        <div class="hz" id="hzOut">0.0 Hz</div>
+        <div class="micro" id="centsOut">not listening</div>
+      </div>
+    </div>
+
+    <div class="meter">
+      <div class="meter-track">
+        <div class="in-band"></div>
+        <div class="tick" style="left:25%"></div>
+        <div class="tick center" style="left:50%"></div>
+        <div class="tick" style="left:75%"></div>
+        <div class="needle" id="needle"></div>
+      </div>
+      <div class="meter-legend">
+        <span>−50¢</span><span>flat</span><span>in tune</span><span>sharp</span><span>+50¢</span>
+      </div>
+    </div>
+
+    <div class="level-row">
+      <span class="micro">Level</span>
+      <div class="level-track">
+        <div class="level-fill" id="levelFill"></div>
+        <div class="level-gate" id="levelGate"></div>
+      </div>
+      <span class="micro" id="levelPct">0%</span>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="btnStart">Start listening</button>
+      <button id="btnCal" disabled>Measure the room</button>
+      <div class="sens">
+        <span class="micro">Sensitivity</span>
+        <input type="range" id="sens" min="0" max="100" value="50" aria-label="Sensitivity">
+      </div>
+    </div>
+
+    <div class="status"><span class="dot" id="dot"></span><span id="statusTxt">Microphone off. Tap “Start listening” and allow access.</span></div>
+  </section>
+
+  <section class="kbd-shell">
+    <div class="kbd-scroll">
+      <div class="keys" id="keys"></div>
+    </div>
+    <div class="kbd-foot">
+      <span class="micro">C3 — C5 &middot; the beginner range</span>
+      <span class="micro" id="kbdHint">middle C is C4</span>
+    </div>
+  </section>
+
+  <section class="log-shell">
+    <div class="log-head">
+      <span class="micro">Notes heard, in order</span>
+      <button id="btnClear">Clear</button>
+    </div>
+    <div class="log-strip" id="logStrip">
+      <span class="log-empty">Play something and the notes land here.</span>
+    </div>
+  </section>
+
+  <section class="brief">
+    <h2>How to run the test</h2>
+    <p>Stand the phone on the music rest or lay it on the keyboard's top panel, screen facing you, roughly level with middle C. Turn off fans and anything humming if you can.</p>
+    <ol class="steps">
+      <li><span>Tap <b>Start listening</b> and allow the microphone. Then tap <b>Measure the room</b> and stay quiet for two seconds — that sets the noise floor.</span></li>
+      <li><span>Play <b>middle C</b> alone, firmly, and let it ring. The big letter should read <b>C4</b> and hold steady, not flicker between notes.</span></li>
+      <li><span>Play <b>C D E F G A B C</b> slowly, one note per second, right hand from middle C. The strip should read those eight notes in order, with nothing extra.</span></li>
+      <li><span>Now play the same run <b>quietly</b>, then <b>fast</b>. Where it starts dropping or inventing notes is the real limit we design around.</span></li>
+      <li><span>Play <b>C and E together</b>, then <b>C E G</b>. Expect it to name only one of them — that's normal here and tells me how much work Stage 3 needs.</span></li>
+    </ol>
+    <p>Tell me what happened at each step and I'll tune the detector, or change the plan if the mic can't carry it.</p>
+  </section>
+
+  <section>
+    <div class="diag">
+      <div><span class="k">Sample rate</span><span class="v" id="dSr">—</span></div>
+      <div><span class="k">Window</span><span class="v" id="dWin">—</span></div>
+      <div><span class="k">Checks / sec</span><span class="v" id="dRate">—</span></div>
+      <div><span class="k">Clarity</span><span class="v" id="dClar">—</span></div>
+      <div><span class="k">Noise floor</span><span class="v" id="dGate">—</span></div>
+      <div><span class="k">Notes logged</span><span class="v" id="dCount">0</span></div>
+    </div>
+  </section>
+
+  <p class="foot">Nothing is recorded or sent anywhere. The audio is analysed on your phone and thrown away frame by frame. Clarity is how confident the detector is that it found one clean pitch — below about 0.60 it stays quiet rather than guessing.</p>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- note maths ---------------- */
+  var A4 = 440;
+  var NAMES = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+  var SHARP = [false,true,false,true,false,false,true,false,true,false,true,false];
+
+  function midiName(m) { return NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); }
+  function midiLetter(m) { return NAMES[((m % 12) + 12) % 12]; }
+  function midiOctave(m) { return Math.floor(m / 12) - 1; }
+  function midiToFreq(m) { return A4 * Math.pow(2, (m - 69) / 12); }
+
+  /* ---------------- keyboard ---------------- */
+  var LOW = 48, HIGH = 72;            // C3 .. C5
+  var whiteEls = {}, blackEls = {};
+
+  (function buildKeyboard() {
+    var host = document.getElementById("keys");
+    var whites = [];
+    for (var m = LOW; m <= HIGH; m++) { if (!SHARP[m % 12]) whites.push(m); }
+
+    whites.forEach(function (m) {
+      var k = document.createElement("div");
+      k.className = "wk";
+      var l = document.createElement("span");
+      l.className = "lbl";
+      l.textContent = (m % 12 === 0) ? midiName(m) : midiLetter(m);
+      k.appendChild(l);
+      host.appendChild(k);
+      whiteEls[m] = k;
+    });
+
+    // black keys sit on the seam after the white key below them
+    var pct = 100 / whites.length;
+    for (var n = LOW; n <= HIGH; n++) {
+      if (!SHARP[n % 12]) continue;
+      var below = n - 1;
+      var idx = whites.indexOf(below);
+      if (idx < 0) continue;
+      var b = document.createElement("div");
+      b.className = "bk";
+      b.style.left = ((idx + 1) * pct) + "%";
+      host.appendChild(b);
+      blackEls[n] = b;
+    }
+  })();
+
+  var litMidi = null;
+  function lightKey(m) {
+    if (litMidi === m) return;
+    if (litMidi !== null) {
+      var prev = whiteEls[litMidi] || blackEls[litMidi];
+      if (prev) prev.classList.remove("on");
+    }
+    litMidi = m;
+    if (m !== null) {
+      var el = whiteEls[m] || blackEls[m];
+      if (el) el.classList.add("on");
+    }
+  }
+
+  /* ---------------- pitch detection (normalised square difference) ---------------- */
+  // Audio is decimated 2:1 before analysis — piano fundamentals we care about top
+  // out near 1 kHz, and halving the rate quarters the work so a phone keeps up.
+  var FFT = 4096;
+  var work = new Float32Array(FFT / 2);
+  var nsdf = null;
+
+  function detect(buf, sr) {
+    var i, n = buf.length >> 1;
+    var rms = 0;
+    for (i = 0; i < n; i++) {
+      var s = (buf[2 * i] + buf[2 * i + 1]) * 0.5;
+      work[i] = s;
+      rms += s * s;
+    }
+    rms = Math.sqrt(rms / n);
+    var out = { rms: rms, freq: 0, clarity: 0 };
+    if (rms < gate) return out;
+
+    var esr = sr / 2;
+    var tauMin = Math.max(2, Math.floor(esr / 1350));   // ~E6 ceiling
+    var tauMax = Math.min(n - 2, Math.ceil(esr / 100)); // ~G2 floor
+    if (tauMax <= tauMin + 2) return out;
+
+    if (!nsdf || nsdf.length < tauMax + 2) nsdf = new Float32Array(tauMax + 2);
+
+    for (var tau = tauMin; tau <= tauMax; tau++) {
+      var ac = 0, mag = 0, lim = n - tau;
+      for (i = 0; i < lim; i++) {
+        var a = work[i], b = work[i + tau];
+        ac += a * b;
+        mag += a * a + b * b;
+      }
+      nsdf[tau] = mag > 0 ? (2 * ac / mag) : 0;
+    }
+
+    // step past the first positive lobe, then collect local maxima
+    var p = tauMin;
+    while (p <= tauMax && nsdf[p] > 0) p++;
+    while (p <= tauMax && nsdf[p] <= 0) p++;
+
+    var peaks = [], best = -1;
+    for (var t = p + 1; t < tauMax; t++) {
+      if (nsdf[t] > nsdf[t - 1] && nsdf[t] >= nsdf[t + 1]) {
+        peaks.push(t);
+        if (nsdf[t] > best) best = nsdf[t];
+      }
+    }
+    if (!peaks.length || best < 0.55) return out;
+
+    // first peak that is nearly as tall as the tallest — keeps it off the octave above
+    var cut = best * 0.90, chosen = -1;
+    for (i = 0; i < peaks.length; i++) {
+      if (nsdf[peaks[i]] >= cut) { chosen = peaks[i]; break; }
+    }
+    if (chosen < 1) return out;
+
+    var y0 = nsdf[chosen - 1], y1 = nsdf[chosen], y2 = nsdf[chosen + 1];
+    var den = y0 - 2 * y1 + y2;
+    var shift = den !== 0 ? 0.5 * (y0 - y2) / den : 0;
+    if (shift < -1 || shift > 1) shift = 0;
+
+    out.freq = esr / (chosen + shift);
+    out.clarity = y1;
+    return out;
+  }
+
+  /* ---------------- state ---------------- */
+  var ctx = null, analyser = null, stream = null, raw = null;
+  var running = false, timer = 0;
+  var gate = 0.010, roomFloor = 0.004, sensitivity = 0.5;
+  var recent = [], logged = [], armed = true, lastStable = null;
+  var checks = 0, checkWindowStart = 0;
+  var calibrating = false, calSamples = [];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var noteBig = $("noteBig"), hzOut = $("hzOut"), centsOut = $("centsOut");
+  var needle = $("needle"), levelFill = $("levelFill"), levelGate = $("levelGate");
+  var levelPct = $("levelPct"), dot = $("dot"), statusTxt = $("statusTxt");
+  var logStrip = $("logStrip"), alertBox = $("alert");
+
+  function setStatus(text, kind) {
+    statusTxt.textContent = text;
+    dot.className = "dot" + (kind ? " " + kind : "");
+  }
+
+  function showAlert(title, body) {
+    alertBox.innerHTML = "";
+    var b = document.createElement("b");
+    b.textContent = title;
+    alertBox.appendChild(b);
+    alertBox.appendChild(document.createTextNode(body));
+    alertBox.hidden = false;
+  }
+
+  function applySensitivity() {
+    // slider slides the gate between 1.4x and 6x the measured room floor
+    var mult = 6 - sensitivity * 4.6;
+    gate = Math.max(0.0035, roomFloor * mult);
+    levelGate.style.left = Math.min(98, gate / 0.25 * 100) + "%";
+    $("dGate").textContent = gate.toFixed(4);
+  }
+
+  /* ---------------- render ---------------- */
+  function renderIdle(rms) {
+    noteBig.classList.remove("live");
+    noteBig.textContent = "—";
+    hzOut.textContent = "0.0 Hz";
+    centsOut.textContent = rms > gate ? "no clear pitch" : "listening";
+    needle.classList.remove("live");
+    needle.style.left = "50%";
+    needle.style.background = "var(--ink-faint)";
+    lightKey(null);
+    $("dClar").textContent = "—";
+  }
+
+  function renderNote(midi, freq, cents, clarity) {
+    noteBig.classList.add("live");
+    noteBig.innerHTML = "";
+    noteBig.appendChild(document.createTextNode(midiLetter(midi)));
+    var o = document.createElement("span");
+    o.className = "oct";
+    o.textContent = midiOctave(midi);
+    noteBig.appendChild(o);
+
+    hzOut.textContent = freq.toFixed(1) + " Hz";
+    var sign = cents > 0 ? "+" : "";
+    centsOut.textContent = sign + cents.toFixed(0) + " cents";
+
+    var c = Math.max(-50, Math.min(50, cents));
+    needle.classList.add("live");
+    needle.style.left = (50 + c) + "%";
+    needle.style.background = Math.abs(cents) <= 10 ? "var(--signal)"
+                            : Math.abs(cents) <= 30 ? "var(--warn)" : "var(--miss)";
+
+    lightKey(midi >= LOW && midi <= HIGH ? midi : null);
+    $("dClar").textContent = clarity.toFixed(2);
+  }
+
+  function pushLog(midi, cents, clarity) {
+    if (logged.length === 0) logStrip.innerHTML = "";
+    var chip = document.createElement("div");
+    chip.className = "chip"
+      + (Math.abs(cents) > 30 ? " sharp" : "")
+      + (clarity < 0.80 ? " weak" : "");
+    var b = document.createElement("b");
+    b.textContent = midiName(midi);
+    var s = document.createElement("span");
+    s.textContent = (cents > 0 ? "+" : "") + cents.toFixed(0) + "¢";
+    chip.appendChild(b);
+    chip.appendChild(s);
+    logStrip.appendChild(chip);
+    logged.push(midi);
+    while (logged.length > 24) {
+      logged.shift();
+      if (logStrip.firstChild) logStrip.removeChild(logStrip.firstChild);
+    }
+    $("dCount").textContent = logged.length;
+    logStrip.scrollLeft = logStrip.scrollWidth;
+  }
+
+  function clearLog() {
+    logged = [];
+    logStrip.innerHTML = "";
+    var e = document.createElement("span");
+    e.className = "log-empty";
+    e.textContent = "Play something and the notes land here.";
+    logStrip.appendChild(e);
+    $("dCount").textContent = "0";
+  }
+
+  /* ---------------- loop ---------------- */
+  function tick() {
+    if (!running) return;
+    analyser.getFloatTimeDomainData(raw);
+    var res = detect(raw, ctx.sampleRate);
+
+    checks++;
+    var now = performance.now();
+    if (now - checkWindowStart > 1000) {
+      $("dRate").textContent = checks.toString();
+      checks = 0;
+      checkWindowStart = now;
+    }
+
+    var pctLevel = Math.min(100, res.rms / 0.25 * 100);
+    levelFill.style.width = pctLevel + "%";
+    levelPct.textContent = Math.round(pctLevel) + "%";
+
+    if (calibrating) { calSamples.push(res.rms); return; }
+
+    if (res.freq > 0 && res.clarity >= 0.60) {
+      var exact = 69 + 12 * Math.log2(res.freq / A4);
+      var midi = Math.round(exact);
+      var cents = (exact - midi) * 100;
+      renderNote(midi, res.freq, cents, res.clarity);
+
+      recent.push(midi);
+      if (recent.length > 4) recent.shift();
+      var agree = 0;
+      for (var i = 0; i < recent.length; i++) { if (recent[i] === midi) agree++; }
+
+      if (recent.length >= 3 && agree >= 3) {
+        if (armed || midi !== lastStable) {
+          pushLog(midi, cents, res.clarity);
+          lastStable = midi;
+          armed = false;
+        }
+      }
+    } else {
+      renderIdle(res.rms);
+      recent.length = 0;
+      if (res.rms < gate) { armed = true; lastStable = null; }
+    }
+  }
+
+  /* ---------------- start / stop ---------------- */
+  async function start() {
+    if (running) { stop(); return; }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showAlert("This browser won't share a microphone.",
+        "Open the page in Safari or Chrome directly rather than inside another app's browser.");
+      setStatus("no microphone API", "err");
+      return;
+    }
+
+    setStatus("asking for the microphone…");
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,   // these three mangle a sustained piano note
+          noiseSuppression: false,
+          autoGainControl: false,
+          channelCount: 1
+        }
+      });
+    } catch (err) {
+      var name = err && err.name ? err.name : "";
+      var framed = false, policyBlocks = false;
+      try { framed = window.self !== window.top; } catch (e) { framed = true; }
+      try {
+        var pp = document.permissionsPolicy || document.featurePolicy;
+        if (pp && pp.allowsFeature) policyBlocks = !pp.allowsFeature("microphone");
+      } catch (e) {}
+
+      if (policyBlocks) {
+        showAlert("This viewer doesn't allow microphones.",
+          "The page is running inside a frame that blocks microphone access, so iOS never gets to show a permission prompt. Use the open-in-browser icon at the top right of the artifact to load it in its own Safari tab, then tap Start listening again. If this same message appears there, tell me — the page will need hosting somewhere else.");
+      } else if (name === "NotAllowedError" || name === "SecurityError") {
+        showAlert(framed ? "The microphone was refused." : "The microphone was blocked.",
+          "This time the frame allows it, so a prompt was refused or a saved choice is blocking it. Reload the page and tap Allow, or reset it in Settings › Safari › Microphone.");
+      } else if (name === "NotFoundError") {
+        showAlert("No microphone found.", "Check that nothing else is holding the mic, then reload.");
+      } else {
+        showAlert("The microphone didn't start.", String(err && err.message ? err.message : err));
+      }
+      setStatus("microphone unavailable", "err");
+      return;
+    }
+
+    alertBox.hidden = true;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC();
+    if (ctx.state === "suspended") { try { await ctx.resume(); } catch (e) {} }
+
+    var src = ctx.createMediaStreamSource(stream);
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = FFT;
+    analyser.smoothingTimeConstant = 0;
+    src.connect(analyser);
+    raw = new Float32Array(analyser.fftSize);
+
+    running = true;
+    armed = true;
+    lastStable = null;
+    checkWindowStart = performance.now();
+    timer = setInterval(tick, 40);
+
+    $("dSr").textContent = Math.round(ctx.sampleRate) + " Hz";
+    $("dWin").textContent = (FFT / ctx.sampleRate * 1000).toFixed(0) + " ms";
+    applySensitivity();
+
+    $("btnStart").textContent = "Stop listening";
+    $("btnStart").classList.remove("primary");
+    $("btnCal").disabled = false;
+    setStatus("listening — play a key", "on");
+  }
+
+  function stop() {
+    running = false;
+    clearInterval(timer);
+    if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+    if (ctx) { try { ctx.close(); } catch (e) {} ctx = null; }
+    renderIdle(0);
+    centsOut.textContent = "not listening";
+    levelFill.style.width = "0%";
+    levelPct.textContent = "0%";
+    $("btnStart").textContent = "Start listening";
+    $("btnStart").classList.add("primary");
+    $("btnCal").disabled = true;
+    $("dRate").textContent = "—";
+    setStatus("Microphone off. Tap “Start listening” and allow access.");
+  }
+
+  function calibrate() {
+    if (!running) return;
+    calSamples = [];
+    calibrating = true;
+    renderIdle(0);
+    setStatus("measuring the room — stay quiet…", "on");
+    $("btnCal").disabled = true;
+    setTimeout(function () {
+      calibrating = false;
+      $("btnCal").disabled = false;
+      if (calSamples.length) {
+        calSamples.sort(function (a, b) { return a - b; });
+        roomFloor = calSamples[Math.floor(calSamples.length * 0.9)] || 0.004;
+      }
+      applySensitivity();
+      setStatus("room floor set — play a key", "on");
+    }, 2000);
+  }
+
+  /* ---------------- wiring ---------------- */
+  $("btnStart").addEventListener("click", start);
+  $("btnCal").addEventListener("click", calibrate);
+  $("btnClear").addEventListener("click", clearLog);
+  $("sens").addEventListener("input", function (e) {
+    sensitivity = Number(e.target.value) / 100;
+    applySensitivity();
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden && running) stop();
+  });
+
+  applySensitivity();
+  renderIdle(0);
+  centsOut.textContent = "not listening";
+})();
+</script>
+
+</body>
+</html>
