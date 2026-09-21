@@ -194,7 +194,7 @@
   }
   .level-gate {
     position: absolute; top: -3px; bottom: -3px; width: 2px;
-    background: var(--miss); left: 12%;
+    background: var(--miss); left: 30%;
   }
 
   /* ---------- keyboard ---------- */
@@ -407,7 +407,7 @@
         <div class="level-fill" id="levelFill"></div>
         <div class="level-gate" id="levelGate"></div>
       </div>
-      <span class="micro" id="levelPct">0%</span>
+      <span class="micro" id="levelPct">−∞ dB</span>
     </div>
 
     <div class="controls">
@@ -549,7 +549,7 @@
       rms += s * s;
     }
     rms = Math.sqrt(rms / n);
-    var out = { rms: rms, freq: 0, clarity: 0 };
+    var out = { rms: rms, freq: 0, clarity: 0, best: 0 };
     if (rms < gate) return out;
 
     var esr = sr / 2;
@@ -581,6 +581,7 @@
         if (nsdf[t] > best) best = nsdf[t];
       }
     }
+    out.best = Math.max(0, best);
     if (!peaks.length || best < 0.55) return out;
 
     // first peak that is nearly as tall as the tallest — keeps it off the octave above
@@ -603,7 +604,8 @@
   /* ---------------- state ---------------- */
   var ctx = null, analyser = null, stream = null, raw = null;
   var running = false, timer = 0;
-  var gate = 0.010, roomFloor = 0.004, sensitivity = 0.5;
+  var gate = 0.0021, roomFloor = 0.001, sensitivity = 0.5;
+  var rmsHist = [];
   var recent = [], logged = [], armed = true, lastStable = null;
   var checks = 0, checkWindowStart = 0;
   var calibrating = false, calSamples = [];
@@ -628,12 +630,24 @@
     alertBox.hidden = false;
   }
 
+  // -70 dBFS .. -10 dBFS across the bar, so a quiet phone mic still shows movement
+  function levelToPct(rms) {
+    if (!(rms > 0)) return 0;
+    var db = 20 * Math.log10(rms);
+    return Math.max(0, Math.min(100, (db + 70) / 60 * 100));
+  }
+  function dbText(rms) {
+    if (!(rms > 0)) return "\u2212\u221E dB";
+    return "\u2212" + Math.abs(Math.round(20 * Math.log10(rms))) + " dB";
+  }
+
   function applySensitivity() {
-    // slider slides the gate between 1.4x and 6x the measured room floor
-    var mult = 6 - sensitivity * 4.6;
-    gate = Math.max(0.0035, roomFloor * mult);
-    levelGate.style.left = Math.min(98, gate / 0.25 * 100) + "%";
-    $("dGate").textContent = gate.toFixed(4);
+    // slider slides the gate between 1.2x and 3x the measured room floor.
+    // The gate only blocks silence; the clarity test is what rejects noise.
+    var mult = 3 - sensitivity * 1.8;
+    gate = Math.max(0.0007, roomFloor * mult);
+    levelGate.style.left = levelToPct(gate) + "%";
+    $("dGate").textContent = dbText(gate);
   }
 
   /* ---------------- render ---------------- */
@@ -718,9 +732,15 @@
       checkWindowStart = now;
     }
 
-    var pctLevel = Math.min(100, res.rms / 0.25 * 100);
-    levelFill.style.width = pctLevel + "%";
-    levelPct.textContent = Math.round(pctLevel) + "%";
+    levelFill.style.width = levelToPct(res.rms) + "%";
+    levelPct.textContent = dbText(res.rms);
+
+    // a fresh key strike = level jumps well above the recent quiet point
+    var floorRecent = rmsHist.length ? Math.min.apply(null, rmsHist) : res.rms;
+    var onset = res.rms > gate * 1.5 && res.rms > floorRecent * 1.6 && rmsHist.length >= 3;
+    rmsHist.push(res.rms);
+    if (rmsHist.length > 6) rmsHist.shift();
+    if (onset) { armed = true; recent.length = 0; }
 
     if (calibrating) { calSamples.push(res.rms); return; }
 
@@ -744,6 +764,7 @@
       }
     } else {
       renderIdle(res.rms);
+      if (res.best > 0) $("dClar").textContent = res.best.toFixed(2);
       recent.length = 0;
       if (res.rms < gate) { armed = true; lastStable = null; }
     }
@@ -809,6 +830,7 @@
     running = true;
     armed = true;
     lastStable = null;
+    rmsHist = [];
     checkWindowStart = performance.now();
     timer = setInterval(tick, 40);
 
@@ -830,7 +852,7 @@
     renderIdle(0);
     centsOut.textContent = "not listening";
     levelFill.style.width = "0%";
-    levelPct.textContent = "0%";
+    levelPct.textContent = "\u2212\u221E dB";
     $("btnStart").textContent = "Start listening";
     $("btnStart").classList.add("primary");
     $("btnCal").disabled = true;
@@ -850,7 +872,7 @@
       $("btnCal").disabled = false;
       if (calSamples.length) {
         calSamples.sort(function (a, b) { return a - b; });
-        roomFloor = calSamples[Math.floor(calSamples.length * 0.9)] || 0.004;
+        roomFloor = Math.max(0.0005, calSamples[Math.floor(calSamples.length * 0.9)] || 0.001);
       }
       applySensitivity();
       setStatus("room floor set — play a key", "on");
