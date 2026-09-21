@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Piano Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground:#F1F0EA; --panel:#FBFAF6; --panel-2:#E8E7DE; --ink:#1A1D19; --ink-soft:#5D625B; --ink-faint:#8C9089;
+    --line:#D9D8CF; --signal:#0F7A5F; --signal-ink:#FBFAF6; --warn:#B4690E; --miss:#B23A2E; --accent:#165C6B; --accent-ink:#FBFAF6;
+    --key-white:#FCFBF7; --key-edge:#CFCEC4; --key-black:#22261F; --staff:#3A3F38;
+    --shadow:0 1px 2px rgba(26,29,25,.07), 0 6px 18px rgba(26,29,25,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#121513; --panel:#1B1F1C; --panel-2:#252A26; --ink:#EBEDE7; --ink-soft:#9AA096; --ink-faint:#6C7269;
+      --line:#2E332E; --signal:#46C795; --signal-ink:#0C1A14; --warn:#DE9B3C; --miss:#E5766D; --accent:#4FA8BD; --accent-ink:#0C1A1E;
+      --key-white:#D7D9D1; --key-edge:#9A9D95; --key-black:#0B0D0B; --staff:#B9BEB3;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#121513; --panel:#1B1F1C; --panel-2:#252A26; --ink:#EBEDE7; --ink-soft:#9AA096; --ink-faint:#6C7269;
+    --line:#2E332E; --signal:#46C795; --signal-ink:#0C1A14; --warn:#DE9B3C; --miss:#E5766D; --accent:#4FA8BD; --accent-ink:#0C1A1E;
+    --key-white:#D7D9D1; --key-edge:#9A9D95; --key-black:#0B0D0B; --staff:#B9BEB3;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.3);
+  }
+  html { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font: 15px/1.5 "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 760px; margin: 0 auto; padding-inline: 18px; padding-block: 22px 48px; display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .eyebrow { font: 500 11px "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .13em; text-transform: uppercase; color: var(--accent); }
+  .micro { font: 400 10.5px "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-faint); }
+  h1, h2 { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+  h1 { font-size: clamp(38px, 10vw, 54px); line-height: 1.0; }
+  h2 { font-size: 26px; line-height: 1.1; }
+  p { margin: 0; }
+  .soft { color: var(--ink-soft); }
+
+  button {
+    font: 500 15px/1 "IBM Plex Sans", system-ui, sans-serif; min-height: 44px; padding: 0 18px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: var(--panel-2); }
+  button:disabled { opacity: .45; cursor: default; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--accent); }
+  button.quiet { background: transparent; border-color: transparent; color: var(--ink-soft); padding: 0 10px; }
+  button.quiet:hover:not(:disabled) { background: var(--panel-2); }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+  .alert { border: 1px solid color-mix(in srgb, var(--miss) 40%, var(--line)); background: color-mix(in srgb, var(--miss) 8%, var(--panel)); border-radius: 11px; padding: 13px 15px; font-size: 14px; }
+  .alert b { display: block; margin-bottom: 2px; }
+
+  /* ---- home ---- */
+  .mast { display: flex; flex-direction: column; gap: 8px; }
+  .mast p { max-width: 48ch; }
+  .setup { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .setup.done { box-shadow: none; }
+  .pips { display: flex; gap: 6px; }
+  .pip { width: 26px; height: 8px; border-radius: 4px; background: var(--panel-2); }
+  .pip.on { background: var(--signal); }
+  .mic-line { display: flex; align-items: center; gap: 8px; font: 12px "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-soft); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-faint); flex: none; }
+  .dot.on { background: var(--signal); }
+
+  .lessons { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .lesson-row { display: grid; grid-template-columns: 34px 1fr auto; gap: 14px; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--line); }
+  .lesson-row .n { font: 600 13px "IBM Plex Mono", ui-monospace, monospace; color: var(--accent); }
+  .lesson-row .t { font-weight: 600; font-size: 16px; }
+  .lesson-row .b { color: var(--ink-soft); font-size: 13.5px; }
+  .lesson-row .stars { font-size: 13px; letter-spacing: 2px; color: var(--warn); min-width: 54px; text-align: right; }
+  .lesson-row.locked { opacity: .5; }
+  .lesson-row button { min-height: 40px; }
+
+  details.diag { border-top: 1px solid var(--line); padding-top: 14px; }
+  details.diag summary { cursor: pointer; }
+  .diag pre { margin: 10px 0 0; font: 12px/1.6 "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  /* ---- shared session view ---- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .prog { display: flex; gap: 4px; flex: 1; max-width: 340px; }
+  .prog i { flex: 1; height: 6px; border-radius: 3px; background: var(--panel-2); min-width: 4px; }
+  .prog i.done { background: var(--signal); }
+  .prog i.now { background: var(--accent); }
+
+  .prompt { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; min-height: 84px; }
+  .prompt .big { font: 400 clamp(64px, 18vw, 96px)/.9 "Instrument Serif", Georgia, serif; letter-spacing: -.02em; }
+  .prompt .big small { font: 500 .28em "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-soft); margin-left: 4px; letter-spacing: 0; }
+  .prompt .fin { font: 500 13px "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-soft); }
+  .say { min-height: 24px; font-size: 15px; color: var(--ink-soft); }
+  .say.ok { color: var(--signal); font-weight: 600; }
+  .say.bad { color: var(--miss); font-weight: 600; }
+
+  .staff-wrap { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .staff-wrap svg { display: block; width: 100%; height: auto; }
+  .staff-lines line { stroke: var(--staff); stroke-width: 1.2; }
+  .mask { fill: var(--panel); }
+  .bar { stroke: var(--staff); stroke-width: 1.4; }
+  .ring { stroke-opacity: 0; }
+  .clef { font-family: "Apple Symbols", "Noto Music", "Segoe UI Symbol", "Symbola", serif; fill: var(--staff); }
+  .sn { transition: opacity .2s; }
+  .sn ellipse { fill: var(--ink-faint); }
+  .sn line { stroke: var(--ink-faint); stroke-width: 1.4; }
+  .sn.done ellipse { fill: var(--signal); } .sn.done line { stroke: var(--signal); }
+  .sn.now ellipse { fill: var(--accent); } .sn.now line { stroke: var(--accent); }
+  .sn.done { opacity: .55; }
+  .sn.now .ring { stroke: var(--accent); stroke-opacity: 1; }
+  .sn text { font: 500 10px "IBM Plex Mono", ui-monospace, monospace; fill: var(--ink-soft); text-anchor: middle; }
+  #notesG { transition: transform .35s ease; }
+  @media (prefers-reduced-motion: reduce) { #notesG { transition: none; } }
+
+  .kbd-shell { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 14px; }
+  .keys { position: relative; display: flex; height: clamp(120px, 26vw, 176px); background: var(--key-black); border-radius: 6px; overflow: hidden; }
+  .wk { flex: 1 1 0; position: relative; background: var(--key-white); border-right: 1px solid var(--key-black); box-shadow: inset 0 -4px 0 var(--key-edge);
+        display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; transition: background .08s; }
+  .wk:last-of-type { border-right: 0; }
+  .wk .lbl { font: 500 11px "IBM Plex Mono", ui-monospace, monospace; color: #6E7268; pointer-events: none; }
+  .bk { position: absolute; top: 0; height: 60%; width: 8%; margin-left: -4%; background: var(--key-black); border-radius: 0 0 3px 3px; box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+  .wk.target { background: color-mix(in srgb, var(--accent) 55%, var(--key-white)); }
+  .wk.target .lbl { color: #fff; font-weight: 600; }
+  .wk.ok { background: var(--signal); } .wk.ok .lbl { color: var(--signal-ink); }
+  .wk.bad { background: var(--miss); } .wk.bad .lbl { color: #fff; }
+  .badge { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+           font: 600 13px/26px "IBM Plex Mono", ui-monospace, monospace; text-align: center; pointer-events: none; }
+  .wk.ok .badge, .wk.bad .badge { display: none; }
+
+  .lvl { display: flex; align-items: center; gap: 10px; }
+  .lvl .track { flex: 1; height: 6px; border-radius: 3px; background: var(--panel-2); position: relative; overflow: hidden; }
+  .lvl .fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); border-radius: 3px; transition: width .06s linear; }
+  .heard { font: 12px "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-faint); min-height: 18px; overflow-wrap: anywhere; }
+
+  .overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--ground) 88%, transparent); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 5; }
+  .card { width: min(440px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 26px 24px; display: flex; flex-direction: column; gap: 14px; }
+  .stars-big { font-size: 30px; letter-spacing: 6px; color: var(--warn); }
+  .stat { display: flex; gap: 22px; }
+  .stat div { display: flex; flex-direction: column; gap: 2px; }
+  .stat b { font: 500 22px "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= HOME ================= -->
+  <section id="vHome" class="wrap-inner" style="display:flex;flex-direction:column;gap:22px">
+    <header class="mast">
+      <div class="eyebrow">Yamaha PSR-275 &middot; right hand</div>
+      <h1>Piano Coach</h1>
+      <p class="soft">Play the highlighted key on your own keyboard. The app listens, waits for the right note, and tells you straight away whether you got it.</p>
+    </header>
+
+    <div id="alert" class="alert" hidden></div>
+
+    <section id="setupCard" class="setup">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div class="micro" id="setupEyebrow">Step 1 &middot; about 40 seconds</div>
+        <h2 id="setupTitle">Teach it your keyboard</h2>
+      </div>
+      <p class="soft" id="setupBody">Every room and microphone hears a keyboard differently. You'll play six keys once each, and the app remembers what they sound like <em>here</em>. You only do this once.</p>
+      <div class="pips" id="setupPips" aria-hidden="true"></div>
+      <div class="row">
+        <button class="primary" id="btnLearn">Learn my keyboard</button>
+        <button class="quiet" id="btnMic">Stop listening</button>
+      </div>
+      <div class="mic-line"><span class="dot" id="micDot"></span><span id="micTxt">Microphone off</span></div>
+    </section>
+
+    <section>
+      <div class="micro" style="margin-bottom:10px">Right hand &middot; C position</div>
+      <ol class="lessons" id="lessonList"></ol>
+    </section>
+
+    <details class="diag" id="diagBox">
+      <summary class="micro">Listening details</summary>
+      <pre id="diagTxt">Start listening to see live numbers.</pre>
+      <div class="row" style="margin-top:10px"><button class="quiet" id="btnReset">Forget my keyboard and start over</button></div>
+    </details>
+  </section>
+
+  <!-- ================= LEARN ================= -->
+  <section id="vLearn" hidden style="display:flex;flex-direction:column;gap:20px">
+    <div class="topbar">
+      <button class="quiet" id="learnBack">&larr; Back</button>
+      <div class="prog" id="learnProg"></div>
+    </div>
+    <div class="prompt"><div class="big" id="learnNote">C<small>4</small></div><div class="fin" id="learnFin"></div></div>
+    <div class="say" id="learnSay">Play the glowing key once and let it ring.</div>
+    <div class="kbd-shell"><div class="keys" id="learnKeys"></div></div>
+    <div class="lvl"><span class="micro">Level</span><div class="track"><div class="fill" id="learnLvl"></div></div><span class="micro" id="learnDb">&minus;&infin; dB</span></div>
+    <div class="heard" id="learnHeard"></div>
+    <div class="row"><button class="quiet" id="learnSkip" hidden>Skip this key</button><button class="quiet" id="learnRestart">Start over</button></div>
+  </section>
+
+  <!-- ================= LESSON ================= -->
+  <section id="vLesson" hidden style="display:flex;flex-direction:column;gap:18px">
+    <div class="topbar">
+      <button class="quiet" id="lessonBack">&larr; Lessons</button>
+      <div class="prog" id="lessonProg"></div>
+    </div>
+    <div>
+      <div class="micro" id="lessonKicker">Lesson</div>
+      <h2 id="lessonTitle">Title</h2>
+    </div>
+    <div class="staff-wrap"><svg id="staff" viewBox="0 38 360 104" role="img" aria-label="Music staff showing the notes to play"></svg></div>
+    <div class="prompt"><div class="big" id="curNote">C<small>4</small></div><div class="fin" id="curFin"></div></div>
+    <div class="say" id="say">&nbsp;</div>
+    <div class="kbd-shell"><div class="keys" id="lessonKeys"></div></div>
+    <div class="lvl"><span class="micro">Level</span><div class="track"><div class="fill" id="lessonLvl"></div></div><span class="micro" id="lessonDb">&minus;&infin; dB</span></div>
+    <div class="heard" id="lessonHeard"></div>
+    <div class="row"><button class="quiet" id="btnSkipNote" hidden>Skip this note</button><button class="quiet" id="btnRestart">Restart lesson</button></div>
+  </section>
+
+</div>
+
+<div class="overlay" id="doneOverlay" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="doneTitle">
+    <div class="micro" id="doneKicker">Lesson complete</div>
+    <h2 id="doneTitle">Nicely done</h2>
+    <div class="stars-big" id="doneStars" aria-hidden="true"></div>
+    <div class="stat">
+      <div><span class="micro">First try</span><b id="doneAcc">0%</b></div>
+      <div><span class="micro">Notes</span><b id="doneNotes">0</b></div>
+      <div><span class="micro">Time</span><b id="doneTime">0:00</b></div>
+    </div>
+    <p class="soft" id="doneNote"></p>
+    <div class="row">
+      <button class="primary" id="doneNext">Next lesson</button>
+      <button id="doneAgain">Play again</button>
+      <button class="quiet" id="doneHome">Lessons</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* DSP-BEGIN — pure signal code, no DOM. Shared by the page and the offline test harness. */
+var Dsp = (function () {
+  "use strict";
+  var N = 8192;                 // analysis window (samples)
+  var HOP_MS = 40;              // ticks are ~40 ms apart
+  var LOW_MIDI = 48, SEMIS = 45, PER = 3;       // C3 .. A6, three bins per semitone
+  var NB = SEMIS * PER;
+  var FLUX_MIN0 = 0.00002, FLUX_MULT = 4, VALID_MULT = 2.2;
+  var COMP = (typeof process !== 'undefined' && process.env && process.env.COMP) ? parseFloat(process.env.COMP) : 0.5;
+
+  /* ---- FFT (iterative radix-2, in place) ---- */
+  var rev = new Uint16Array(N), cosT = new Float64Array(N / 2), sinT = new Float64Array(N / 2), win = new Float64Array(N);
+  (function init() {
+    var bits = Math.log2(N), i, j;
+    for (i = 0; i < N; i++) {
+      var r = 0, x = i;
+      for (j = 0; j < bits; j++) { r = (r << 1) | (x & 1); x >>= 1; }
+      rev[i] = r;
+    }
+    for (i = 0; i < N / 2; i++) { cosT[i] = Math.cos(2 * Math.PI * i / N); sinT[i] = -Math.sin(2 * Math.PI * i / N); }
+    for (i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
+  })();
+  var re = new Float64Array(N), im = new Float64Array(N);
+
+  function magnitudes(buf, out) {
+    var i;
+    for (i = 0; i < N; i++) { re[rev[i]] = buf[i] * win[i]; im[rev[i]] = 0; }
+    for (var size = 2; size <= N; size <<= 1) {
+      var half = size >> 1, step = N / size;
+      for (var start = 0; start < N; start += size) {
+        for (var k = 0, t = 0; k < half; k++, t += step) {
+          var a = start + k, b = a + half;
+          var tr = re[b] * cosT[t] - im[b] * sinT[t];
+          var ti = re[b] * sinT[t] + im[b] * cosT[t];
+          re[b] = re[a] - tr; im[b] = im[a] - ti;
+          re[a] += tr; im[a] += ti;
+        }
+      }
+    }
+    for (i = 0; i < N / 2; i++) out[i] = Math.sqrt(re[i] * re[i] + im[i] * im[i]) / N;
+    return out;
+  }
+
+  function binRanges(sr) {
+    var k1 = new Int32Array(NB), k2 = new Int32Array(NB), hz = sr / N, r = Math.pow(2, 1 / 72);
+    for (var i = 0; i < NB; i++) {
+      var f = 440 * Math.pow(2, (LOW_MIDI + i / PER - 69) / 12);
+      k1[i] = Math.max(1, Math.floor(f / r / hz));
+      k2[i] = Math.min(N / 2 - 2, Math.ceil(f * r / hz));
+    }
+    return { k1: k1, k2: k2 };
+  }
+
+  /* ---- vector helpers ---- */
+  function normalise(v) {                       // zero-mean, unit-norm ("Pearson" form)
+    var n = v.length, m = 0, i;
+    for (i = 0; i < n; i++) m += v[i];
+    m /= n;
+    var e = 0, out = new Float32Array(n);
+    for (i = 0; i < n; i++) { var d = v[i] - m; out[i] = d; e += d * d; }
+    if (e < 1e-18) return null;
+    e = Math.sqrt(e);
+    for (i = 0; i < n; i++) out[i] /= e;
+    return out;
+  }
+  function dot(a, b) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+
+  /* ---- engine: one per audio session ---- */
+  function createEngine(sr) {
+    var ranges = binRanges(sr), mag = new Float32Array(N / 2);
+    var feats = [];                    // recent linear feature vectors, newest last
+    var rmsHist = [], floorHist = [], fluxHist = [], tickNo = 0, lastOnsetTick = -99;
+    var strike = null, fluxMin = FLUX_MIN0, lastValid = null;
+
+    function rmsTail(buf, n) { var s = 0; for (var i = N - n; i < N; i++) s += buf[i] * buf[i]; return Math.sqrt(s / n); }
+
+    // buf: the newest N samples. Returns {rms, gate, onset, strike}.
+    function process(buf) {
+      tickNo++;
+      var rms = rmsTail(buf, 1536);
+      magnitudes(buf, mag);
+      var f = new Float32Array(NB);
+      for (var i = 0; i < NB; i++) {
+        var m = 0;
+        for (var k = ranges.k1[i]; k <= ranges.k2[i]; k++) if (mag[k] > m) m = mag[k];
+        f[i] = m;
+      }
+      feats.push(f); if (feats.length > 8) feats.shift();
+
+      floorHist.push(rms); if (floorHist.length > 100) floorHist.shift();
+      var floor = Math.min.apply(null, floorHist);
+      var gate = Math.max(0.0006, floor * 2.0);
+
+      // spectral flux: how much NEW energy appeared versus two ticks ago. Steady hum and
+      // a still-ringing previous note add nothing; a fresh key strike adds a lot.
+      var flux = 0;
+      if (feats.length >= 3) {
+        var p2 = feats[feats.length - 3];
+        for (var q = 0; q < NB; q++) { var dd = f[q] - p2[q]; if (dd > 0) flux += dd; }
+      }
+      var prevFlux = fluxHist.length ? fluxHist[fluxHist.length - 1] : 0;
+      fluxHist.push(flux); if (fluxHist.length > 60) fluxHist.shift();
+      var sorted = fluxHist.slice().sort(function (a, b) { return a - b; });
+      var med = sorted[Math.floor(sorted.length * 0.5)];
+      var thr = Math.max(fluxMin, med * FLUX_MULT);
+      var onset = fluxHist.length >= 8 && flux > thr && flux > prevFlux && (tickNo - lastOnsetTick) >= 5;
+      // a faint ripple inside a strike that is still being measured is not a new strike
+      if (onset && strike && strike.valid && strike.j < 10 && flux < 0.4 * strike.peakFlux) onset = false;
+      rmsHist.push(rms); if (rmsHist.length > 8) rmsHist.shift();
+
+      if (onset) {
+        lastOnsetTick = tickNo;
+        var base = feats.length >= 4 ? feats[feats.length - 4] : feats[0];   // ~3 ticks (120 ms) earlier
+        if (strike && strike.valid && strike.feature) lastValid = { feature: strike.feature, peak: strike.peakFlux, tick: tickNo };
+        strike = { prev: lastValid, ring: false, j: 0, base: base, sum: new Float32Array(NB), n: 0, feature: null, rms: rms, peakFlux: flux, thr: thr, noiseFlux: med, valid: false };
+      } else if (strike) {
+        strike.j++;
+        if (strike.j > 12) {
+          if (strike.valid && strike.feature) lastValid = { feature: strike.feature, peak: strike.peakFlux, tick: tickNo };
+          strike = null;
+        }
+      }
+      if (strike && flux > strike.peakFlux && strike.j <= 6) strike.peakFlux = flux;
+      if (strike && !strike.valid && strike.j >= 2 && strike.peakFlux >= VALID_MULT * strike.thr) strike.valid = true;
+      if (strike && strike.j >= 2 && strike.j <= 10) {
+        if (strike.j === 3 && strike.prev && !strike.ring) {
+          var pv = strike.prev;
+          if (tickNo - pv.tick < 40 && strike.feature && strike.peakFlux < 0.35 * pv.peak && dot(strike.feature, pv.feature) >= 0.85) { strike.ring = true; strike.handled = true; }
+        }
+        for (var b = 0; b < NB; b++) {
+          var d = f[b] - strike.base[b];
+          strike.sum[b] += d > 0 ? Math.pow(d, COMP) : 0;
+        }
+        strike.n++;
+        strike.feature = normalise(strike.sum);
+      }
+      return { rms: rms, gate: gate, flux: flux, fluxThr: thr, onset: onset, strike: strike };
+    }
+    return { process: process, setFluxMin: function (v) { fluxMin = Math.max(FLUX_MIN0 * 0.5, v); }, getFluxMin: function () { return fluxMin; } };
+  }
+
+  /* ---- judging ---- */
+  var CFG = { accept: (typeof process !== "undefined" && process.env && process.env.ACC) ? parseFloat(process.env.ACC) : 0.80, margin: 0.06, wrong: 0.80, wrongMargin: 0.12, finalAccept: 0.76, faintAccept: 0.88 };
+
+  function similarities(feature, templates) {   // templates: {id: Float32Array}
+    var out = {};
+    for (var id in templates) out[id] = dot(feature, templates[id]);
+    return out;
+  }
+  // returns {verdict:'correct'|'wrong'|'pending'|'unclear', heard:id|null, st, so}
+  function judge(sims, target, final, valid) {
+    var st = sims[target] === undefined ? -1 : sims[target], so = -1, oid = null;
+    for (var id in sims) if (String(id) !== String(target) && sims[id] > so) { so = sims[id]; oid = id; }
+    if (valid === false) {
+      // faint strike: only trust it if it lines up almost perfectly with the target, and never flag it wrong
+      if (st >= CFG.faintAccept && st >= so + 0.12) return { verdict: "correct", heard: target, st: st, so: so };
+      return { verdict: final ? "unclear" : "pending", heard: null, st: st, so: so };
+    }
+    if (st >= CFG.accept && st >= so + CFG.margin) return { verdict: "correct", heard: target, st: st, so: so };
+    if (so >= CFG.wrong && so >= st + CFG.wrongMargin) return { verdict: "wrong", heard: oid, st: st, so: so };
+    if (final) {
+      if (st >= CFG.finalAccept && st >= so) return { verdict: "correct", heard: target, st: st, so: so };
+      return { verdict: "unclear", heard: null, st: st, so: so };
+    }
+    return { verdict: "pending", heard: null, st: st, so: so };
+  }
+  function blend(t, f, w) {                       // nudge a template towards a new confident strike
+    var out = new Float32Array(t.length);
+    for (var i = 0; i < t.length; i++) out[i] = (1 - w) * t[i] + w * f[i];
+    return normalise(out) || t;
+  }
+  function bestMatch(sims) {
+    var b = null, bs = -1, s2 = -1;
+    for (var id in sims) { if (sims[id] > bs) { s2 = bs; bs = sims[id]; b = id; } else if (sims[id] > s2) s2 = sims[id]; }
+    return { id: b, sim: bs, second: s2 };
+  }
+
+
+  /* ---- which note does this spectrum look like? (harmonic-series alignment) ---- */
+  function harmonicScores(feat) {
+    var out = {};
+    for (var m = 48; m <= 80; m++) {
+      var sum = 0, wsum = 0;
+      for (var k = 1; k <= 6; k++) {
+        var pos = (m + 12 * Math.log(k) / Math.LN2 - LOW_MIDI) * PER;
+        if (pos < 1 || pos > NB - 2) continue;
+        var i = Math.round(pos), v = Math.max(feat[i - 1], feat[i], feat[i + 1]), w = 1 / Math.sqrt(k);
+        sum += w * v; wsum += w;
+      }
+      out[m] = wsum ? sum / wsum : 0;
+    }
+    return out;
+  }
+  // Warn only when the sound clearly looks like a DIFFERENT pitch class than `target`.
+  function looksLikeOtherNote(feat, target) {
+    var sc = harmonicScores(feat), best = null, bs = -1e9;
+    for (var m in sc) if (sc[m] > bs) { bs = sc[m]; best = Number(m); }
+    var st = sc[target] === undefined ? 0 : sc[target];
+    if (best !== null && ((best - target) % 12 + 12) % 12 !== 0 && bs >= 1.25 * Math.max(st, 0.05) && bs > 0.15) return best;
+    return null;
+  }
+
+  return { blend: blend, harmonicScores: harmonicScores, looksLikeOtherNote: looksLikeOtherNote, N: N, HOP_MS: HOP_MS, NB: NB, createEngine: createEngine, normalise: normalise, dot: dot,
+           similarities: similarities, judge: judge, bestMatch: bestMatch, CFG: CFG };
+})();
+if (typeof module !== "undefined") module.exports = Dsp;
+/* DSP-END */
+
+</script>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var NAMES = ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+  function noteLetter(m) { return NAMES[m % 12]; }
+  function noteOct(m) { return Math.floor(m / 12) - 1; }
+  function noteName(m) { return noteLetter(m) + noteOct(m); }
+  var DIA = { 0: 0, 2: 1, 4: 2, 5: 3, 7: 4, 9: 5, 11: 6 };
+  function diatonic(m) { return (noteOct(m) - 4) * 7 + DIA[m % 12]; }   // C4 = 0
+
+  /* ---------------- content ---------------- */
+  var LEARN = [60, 62, 64, 65, 67, 69];
+  var FINGER = { 60: 1, 62: 2, 64: 3, 65: 4, 67: 5 };
+  var LESSONS = [
+    { id: "l1", title: "Find middle C", blurb: "Thumb on the key just left of the two black keys.", notes: [60, 60, 60, 60] },
+    { id: "l2", title: "C, D, E", blurb: "Fingers 1, 2, 3 — one key at a time.", notes: [60, 62, 64, 62, 60, 62, 64, 64] },
+    { id: "l3", title: "The five-finger walk", blurb: "Up and down all five fingers.", notes: [60, 62, 64, 65, 67, 65, 64, 62, 60] },
+    { id: "l4", title: "Skips", blurb: "Jump a key, land on the right finger.", notes: [60, 64, 67, 64, 60, 62, 65, 62, 64, 67, 64, 60] },
+    { id: "l5", title: "Mary Had a Little Lamb", blurb: "Your first real tune. Only three fingers to start.", notes: [64, 62, 60, 62, 64, 64, 64, 62, 62, 62, 64, 67, 67] },
+    { id: "l6", title: "Ode to Joy", blurb: "Beethoven, first two lines.", notes: [64, 64, 65, 67, 67, 65, 64, 62, 60, 60, 62, 64, 64, 62, 62] },
+    { id: "l7", title: "Twinkle, Twinkle", blurb: "Adds A. Your hand stretches one key.", notes: [60, 60, 67, 67, 69, 69, 67, 65, 65, 64, 64, 62, 62, 60] }
+  ];
+
+  /* ---------------- storage ---------------- */
+  var store = { templates: {}, fluxMin: null, results: {} };
+  try {
+    var raw = localStorage.getItem("pc.v2");
+    if (raw) {
+      var o = JSON.parse(raw);
+      for (var id in (o.templates || {})) store.templates[id] = Float32Array.from(o.templates[id]);
+      store.fluxMin = o.fluxMin || null; store.results = o.results || {};
+    }
+  } catch (e) {}
+  function save() {
+    try {
+      var t = {}; for (var id in store.templates) t[id] = Array.from(store.templates[id]);
+      localStorage.setItem("pc.v2", JSON.stringify({ templates: t, fluxMin: store.fluxMin, results: store.results }));
+    } catch (e) {}
+  }
+  function learnedCount() { var n = 0; LEARN.forEach(function (m) { if (store.templates[m]) n++; }); return n; }
+  function haveNotes(list) { return list.every(function (m) { return !!store.templates[m]; }); }
+
+  /* ---------------- keyboard widget ---------------- */
+  function buildKeys(host, low, high) {
+    var whites = [], W = {}, B = {}, n;
+    host.innerHTML = "";
+    for (n = low; n <= high; n++) if ([1, 3, 6, 8, 10].indexOf(n % 12) < 0) whites.push(n);
+    whites.forEach(function (m) {
+      var k = document.createElement("div"); k.className = "wk";
+      var l = document.createElement("span"); l.className = "lbl"; l.textContent = m % 12 === 0 ? noteName(m) : noteLetter(m);
+      k.appendChild(l); host.appendChild(k); W[m] = k;
+    });
+    var pct = 100 / whites.length;
+    for (n = low; n <= high; n++) {
+      if ([1, 3, 6, 8, 10].indexOf(n % 12) < 0) continue;
+      var idx = whites.indexOf(n - 1); if (idx < 0) continue;
+      var b = document.createElement("div"); b.className = "bk"; b.style.left = ((idx + 1) * pct) + "%"; host.appendChild(b); B[n] = b;
+    }
+    var badge = document.createElement("div"); badge.className = "badge";
+    var target = null, timers = {};
+    return {
+      setTarget: function (m, finger) {
+        if (target && W[target]) { W[target].classList.remove("target"); if (badge.parentNode) badge.parentNode.removeChild(badge); }
+        target = m;
+        if (m && W[m]) { W[m].classList.add("target"); if (finger) { badge.textContent = finger; W[m].appendChild(badge); } }
+      },
+      flash: function (m, kind, ms) {
+        var el = W[m]; if (!el) return;
+        el.classList.remove("ok", "bad"); el.classList.add(kind);
+        clearTimeout(timers[m]); timers[m] = setTimeout(function () { el.classList.remove(kind); }, ms || 450);
+      }
+    };
+  }
+  var kbLearn = buildKeys($("learnKeys"), 60, 72);
+  var kbLesson = buildKeys($("lessonKeys"), 60, 72);
+
+  /* ---------------- audio + engine ---------------- */
+  var ctx = null, analyser = null, stream = null, engine = null, raw8k = null, timer = 0, running = false;
+  var lastR = null, lastInfo = "";
+
+  function levelPct(rms) { if (!(rms > 0)) return 0; var db = 20 * Math.log10(rms); return Math.max(0, Math.min(100, (db + 70) / 60 * 100)); }
+  function dbText(rms) { return rms > 0 ? "−" + Math.abs(Math.round(20 * Math.log10(rms))) + " dB" : "−∞ dB"; }
+
+  function showAlert(title, body) {
+    var a = $("alert"); a.innerHTML = ""; var b = document.createElement("b"); b.textContent = title;
+    a.appendChild(b); a.appendChild(document.createTextNode(body)); a.hidden = false;
+  }
+  function setMicUi() {
+    $("micDot").className = "dot" + (running ? " on" : "");
+    $("micTxt").textContent = running ? "Listening" : "Microphone off";
+    $("btnMic").hidden = !running;
+  }
+
+  async function ensureMic() {
+    if (running) return true;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showAlert("This browser can't share a microphone. ", "Open the page in Safari or Chrome directly, not inside another app.");
+      return false;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+    } catch (err) {
+      var nm = err && err.name || "";
+      if (nm === "NotAllowedError" || nm === "SecurityError") showAlert("The microphone was blocked. ", "Allow it when Safari asks, or reset it in Settings › Safari › Microphone, then reload.");
+      else if (nm === "NotFoundError") showAlert("No microphone found. ", "Check that nothing else is using it, then reload.");
+      else showAlert("The microphone didn't start. ", String(err && err.message || err));
+      return false;
+    }
+    $("alert").hidden = true;
+    var AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC();
+    if (ctx.state === "suspended") { try { await ctx.resume(); } catch (e) {} }
+    var src = ctx.createMediaStreamSource(stream);
+    analyser = ctx.createAnalyser(); analyser.fftSize = Dsp.N; analyser.smoothingTimeConstant = 0;
+    src.connect(analyser);
+    raw8k = new Float32Array(Dsp.N);
+    engine = Dsp.createEngine(ctx.sampleRate);
+    running = true; setMicUi();
+    timer = setInterval(tick, Dsp.HOP_MS);
+    return true;
+  }
+  function stopMic() {
+    running = false; clearInterval(timer);
+    if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+    if (ctx) { try { ctx.close(); } catch (e) {} ctx = null; }
+    setMicUi();
+  }
+  document.addEventListener("visibilitychange", function () { if (document.hidden && running) stopMic(); });
+
+  function strengthOf(s) { return s.noiseFlux > 0 ? Math.round(s.peakFlux / s.noiseFlux) : 0; }
+  function simsText(sims, n) {
+    var arr = []; for (var id in sims) arr.push([id, sims[id]]);
+    arr.sort(function (a, b) { return b[1] - a[1]; });
+    return arr.slice(0, n || 3).map(function (p) { return noteName(Number(p[0])) + " " + p[1].toFixed(2); }).join("  ·  ");
+  }
+
+  function tick() {
+    if (!running) return;
+    analyser.getFloatTimeDomainData(raw8k);
+    var r = engine.process(raw8k); lastR = r;
+    var pct = levelPct(r.rms) + "%", db = dbText(r.rms);
+    if (view === "learn") { $("learnLvl").style.width = pct; $("learnDb").textContent = db; }
+    if (view === "lesson") { $("lessonLvl").style.width = pct; $("lessonDb").textContent = db; }
+    if ($("diagBox").open) {
+      $("diagTxt").textContent = "level " + db + "   gate " + dbText(r.gate) + "\nstrike trigger " + r.fluxThr.toExponential(1) + "   latest flux " + r.flux.toExponential(1) + "\n" + (lastInfo || "no strike yet");
+    }
+    var s = r.strike;
+    if (s && s.feature && !s.handled && s.j >= 2) {
+      var sims = Dsp.similarities(s.feature, store.templates);
+      if (s.j === 10 || s.j === 4) lastInfo = "last strike" + (s.valid ? "" : " (faint)") + ": " + simsText(sims, 4) + "   strength \u00D7" + strengthOf(s);
+      if (view === "learn") { if (s.valid) onLearnStrike(s, sims); else learnFaint(s); }
+      else if (view === "lesson") onLessonStrike(s, sims);
+    }
+    if (view === "lesson") maybeOfferSkip();
+  }
+
+  /* ---------------- views ---------------- */
+  var view = "home";
+  function show(v) {
+    view = v;
+    $("vHome").hidden = v !== "home"; $("vLearn").hidden = v !== "learn"; $("vLesson").hidden = v !== "lesson";
+    $("vHome").style.display = v === "home" ? "flex" : "none";
+    $("vLearn").style.display = v === "learn" ? "flex" : "none";
+    $("vLesson").style.display = v === "lesson" ? "flex" : "none";
+    window.scrollTo(0, 0);
+  }
+
+  /* ---------------- home ---------------- */
+  function renderHome() {
+    var n = learnedCount(), all = n === LEARN.length;
+    var pips = $("setupPips"); pips.innerHTML = "";
+    LEARN.forEach(function (m) { var p = document.createElement("span"); p.className = "pip" + (store.templates[m] ? " on" : ""); pips.appendChild(p); });
+    $("setupCard").className = "setup" + (all ? " done" : "");
+    $("setupEyebrow").textContent = all ? "Keyboard learned" : "Step 1 · about 40 seconds";
+    $("setupTitle").textContent = all ? "Ready to play" : (n ? "Finish teaching it your keyboard" : "Teach it your keyboard");
+    $("setupBody").textContent = all
+      ? "It knows how your keys sound in this room. If the room changes a lot, or you move the device, learn it again."
+      : "Every room and microphone hears a keyboard differently. You'll play six keys once each, and the app remembers what they sound like here. You only do this once.";
+    $("btnLearn").textContent = all ? "Learn again" : (n ? "Continue" : "Learn my keyboard");
+    $("btnLearn").className = all ? "" : "primary";
+    var ul = $("lessonList"); ul.innerHTML = "";
+    LESSONS.forEach(function (L, i) {
+      var ok = haveNotes(L.notes);
+      var li = document.createElement("li"); li.className = "lesson-row" + (ok ? "" : " locked");
+      var num = document.createElement("div"); num.className = "n"; num.textContent = String(i + 1);
+      var mid = document.createElement("div");
+      var t = document.createElement("div"); t.className = "t"; t.textContent = L.title;
+      var b = document.createElement("div"); b.className = "b"; b.textContent = ok ? L.blurb : "Learn your keyboard first";
+      mid.appendChild(t); mid.appendChild(b);
+      var right = document.createElement("div"); right.className = "row"; right.style.flexWrap = "nowrap";
+      var res = store.results[L.id];
+      var st = document.createElement("span"); st.className = "stars"; st.textContent = res ? "★★★".slice(0, res.stars) + "☆☆☆".slice(0, 3 - res.stars) : "";
+      var btn = document.createElement("button"); btn.textContent = res ? "Again" : "Start"; btn.disabled = !ok;
+      if (ok && !res) btn.className = "primary";
+      btn.addEventListener("click", function () { startLesson(L.id); });
+      right.appendChild(st); right.appendChild(btn);
+      li.appendChild(num); li.appendChild(mid); li.appendChild(right); ul.appendChild(li);
+    });
+    setMicUi();
+  }
+  $("btnMic").addEventListener("click", stopMic);
+  $("btnReset").addEventListener("click", function () {
+    if (!confirm("Forget how your keyboard sounds? Your lesson stars stay.")) return;
+    store.templates = {}; store.fluxMin = null; save(); renderHome();
+  });
+  $("btnLearn").addEventListener("click", function () { startLearn(); });
+
+  /* ---------------- learn ---------------- */
+  var learnIdx = 0, learnBusy = false, learnFlux = [], learnStartAt = 0;
+  function buildProg(host, total, done, now) {
+    host.innerHTML = "";
+    for (var i = 0; i < total; i++) { var e = document.createElement("i"); e.className = i < done ? "done" : (i === now ? "now" : ""); host.appendChild(e); }
+  }
+  function renderLearn() {
+    buildProg($("learnProg"), LEARN.length, learnIdx, learnIdx);
+    var m = LEARN[learnIdx];
+    $("learnNote").innerHTML = ""; $("learnNote").appendChild(document.createTextNode(noteLetter(m)));
+    var sm = document.createElement("small"); sm.textContent = noteOct(m); $("learnNote").appendChild(sm);
+    $("learnFin").textContent = FINGER[m] ? "finger " + FINGER[m] : "";
+    kbLearn.setTarget(m, FINGER[m]);
+    $("learnSay").className = "say"; $("learnSay").textContent = "Play the glowing key once, firmly, and let it ring.";
+    $("learnSkip").hidden = true; learnStartAt = Date.now();
+  }
+  async function startLearn() {
+    if (!(await ensureMic())) return;
+    learnIdx = 0; while (learnIdx < LEARN.length && store.templates[LEARN[learnIdx]]) learnIdx++;
+    if (learnIdx >= LEARN.length) { learnIdx = 0; }
+    learnFlux = []; learnBusy = false; show("learn"); renderLearn();
+  }
+  function onLearnStrike(s, sims) {
+    if (learnBusy || s.j < 10) return;
+    s.handled = true;
+    var target = LEARN[learnIdx], bm = Dsp.bestMatch(sims);
+    var str = strengthOf(s);
+    $("learnHeard").textContent = "heard: " + simsText(sims, 3) + "   \u00B7   strength \u00D7" + str;
+    if (bm.id !== null && Number(bm.id) !== target && bm.sim >= 0.8) {
+      $("learnSay").className = "say bad"; $("learnSay").textContent = "That sounded like " + noteName(Number(bm.id)) + ". Play " + noteName(target) + " — the glowing key.";
+      return;
+    }
+    var other = Dsp.looksLikeOtherNote(s.feature, target);
+    if (other !== null) {
+      $("learnSay").className = "say bad"; $("learnSay").textContent = "That sounded like " + noteName(other) + ". Play " + noteName(target) + " \u2014 the glowing key.";
+      return;
+    }
+    store.templates[target] = Float32Array.from(s.feature); learnFlux.push(s.peakFlux);
+    learnBusy = true; kbLearn.flash(target, "ok", 600);
+    $("learnSay").className = "say ok"; $("learnSay").textContent = str < 12 ? "Got it \u2014 but faint. A little louder would be more reliable." : "Got it.";
+    buildProg($("learnProg"), LEARN.length, learnIdx + 1, -1);
+    setTimeout(function () { learnIdx++; learnBusy = false; if (learnIdx >= LEARN.length) finishLearn(); else renderLearn(); }, 800);
+  }
+  function finishLearn() {
+    var dup = null, a, b;
+    for (a = 0; a < LEARN.length && dup === null; a++) for (b = a + 1; b < LEARN.length; b++) {
+      var A = store.templates[LEARN[a]], B = store.templates[LEARN[b]];
+      if (A && B && Dsp.dot(A, B) >= 0.8) { dup = LEARN[b]; break; }
+    }
+    if (dup !== null) {
+      delete store.templates[dup]; learnIdx = LEARN.indexOf(dup); learnBusy = false; renderLearn();
+      $("learnSay").className = "say bad"; $("learnSay").textContent = "Two keys sounded the same to me. Let's redo " + noteName(dup) + ".";
+      return;
+    }
+    save(); show("home"); renderHome();
+  }
+  function learnFaint(s) {
+    if (s.j === 9 && !s.warned && !learnBusy) {
+      s.warned = true;
+      $("learnSay").className = "say bad";
+      $("learnSay").textContent = "I heard something faint but couldn't lock on. Press a bit firmer, turn the keyboard up, or move the device closer to its speaker.";
+    }
+  }
+  function offerLearnSkip() {
+    if (view === "learn" && !learnBusy && Date.now() - learnStartAt > 9000) {
+      $("learnSkip").hidden = false;
+      var say = $("learnSay"); if (say.className === "say") say.textContent = "Not hearing it? Press a bit firmer, or move the device closer to the speaker.";
+    }
+  }
+  setInterval(offerLearnSkip, 1000);
+  $("learnSkip").addEventListener("click", function () { learnIdx++; learnBusy = false; if (learnIdx >= LEARN.length) finishLearn(); else renderLearn(); });
+  $("learnRestart").addEventListener("click", function () { store.templates = {}; learnFlux = []; learnIdx = 0; learnBusy = false; renderLearn(); });
+  $("learnBack").addEventListener("click", function () { save(); show("home"); renderHome(); });
+
+  /* ---------------- lesson ---------------- */
+  var lesson = null, idx = 0, mistakes = [], lockUntil = 0, startedAt = 0, noteSince = 0, counters = { ok: 0, bad: 0, unclear: 0 }, evLog = [];
+  var STAFF_S = 6, STAFF_Y0 = 100, NOTE_DX = 46, NOTE_X0 = 96, NS = "http://www.w3.org/2000/svg";
+  function svgEl(name, attrs) { var e = document.createElementNS(NS, name); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function noteY(m) { return STAFF_Y0 - (diatonic(m) - 2) * STAFF_S; }
+
+  function buildStaff(L) {
+    var svg = $("staff"); svg.innerHTML = "";
+    var right = svgEl("g", { "class": "staff-lines" }), left = svgEl("g", { "class": "staff-lines" }), i;
+    for (i = 0; i < 5; i++) {
+      right.appendChild(svgEl("line", { x1: 74, x2: 354, y1: STAFF_Y0 - i * 12, y2: STAFF_Y0 - i * 12 }));
+      left.appendChild(svgEl("line", { x1: 6, x2: 74, y1: STAFF_Y0 - i * 12, y2: STAFF_Y0 - i * 12 }));
+    }
+    svg.appendChild(right);
+    var g = svgEl("g", { id: "notesG" });
+    L.notes.forEach(function (m, k) {
+      var x = NOTE_X0 + k * NOTE_DX, y = noteY(m), grp = svgEl("g", { "class": "sn", "data-i": k });
+      if (m === 60) grp.appendChild(svgEl("line", { x1: x - 11, x2: x + 11, y1: y, y2: y }));
+      grp.appendChild(svgEl("ellipse", { cx: x, cy: y, rx: 7.4, ry: 5.4, transform: "rotate(-18 " + x + " " + y + ")" }));
+      grp.appendChild(svgEl("circle", { "class": "ring", cx: x, cy: y, r: 12, fill: "none", "stroke-width": 1.4 }));
+      var t = svgEl("text", { x: x, y: 130 }); t.textContent = noteLetter(m); grp.appendChild(t);
+      g.appendChild(grp);
+    });
+    svg.appendChild(g);
+    svg.appendChild(svgEl("rect", { x: 0, y: 30, width: 74, height: 120, "class": "mask" }));
+    svg.appendChild(left);
+    var clef = svgEl("text", { x: 12, y: 108, "class": "clef", "font-size": 62 }); clef.textContent = "\uD834\uDD1E"; svg.appendChild(clef);
+    svg.appendChild(svgEl("line", { x1: 74, x2: 74, y1: 52, y2: 100, "class": "bar" }));
+  }
+  function updateStaff() {
+    var kids = $("notesG").children, i;
+    for (i = 0; i < kids.length; i++) kids[i].setAttribute("class", "sn" + (i < idx ? " done" : (i === idx ? " now" : "")));
+    var shift = -Math.max(0, idx) * NOTE_DX;
+    $("notesG").style.transform = "translateX(" + shift + "px)";
+  }
+  function renderNote() {
+    var m = lesson.notes[idx];
+    $("curNote").innerHTML = ""; $("curNote").appendChild(document.createTextNode(noteLetter(m)));
+    var sm = document.createElement("small"); sm.textContent = noteOct(m); $("curNote").appendChild(sm);
+    $("curFin").textContent = FINGER[m] ? "finger " + FINGER[m] : "";
+    kbLesson.setTarget(m, FINGER[m]);
+    buildProg($("lessonProg"), lesson.notes.length, idx, idx);
+    updateStaff(); noteSince = Date.now(); $("btnSkipNote").hidden = true;
+  }
+  async function startLesson(id) {
+    var L = LESSONS.filter(function (x) { return x.id === id; })[0]; if (!L) return;
+    if (!(await ensureMic())) return;
+    lesson = L; idx = 0; mistakes = L.notes.map(function () { return 0; }); lockUntil = 0; startedAt = Date.now();
+    counters = { ok: 0, bad: 0, unclear: 0 }; evLog = [];
+    $("lessonKicker").textContent = "Lesson " + (LESSONS.indexOf(L) + 1) + " of " + LESSONS.length;
+    $("lessonTitle").textContent = L.title;
+    $("doneOverlay").hidden = true; $("say").className = "say"; $("say").textContent = "Play the glowing key.";
+    buildStaff(L); show("lesson"); renderNote();
+  }
+  function say(text, kind) { var e = $("say"); e.className = "say" + (kind ? " " + kind : ""); e.textContent = text; }
+
+  function onLessonStrike(s, sims) {
+    if (!lesson || Date.now() < lockUntil || idx >= lesson.notes.length || !$("doneOverlay").hidden) return;
+    var target = lesson.notes[idx], res = Dsp.judge(sims, target, s.j >= 10, s.valid);
+    if (res.verdict === "pending") return;
+    s.handled = true;
+    $("lessonHeard").textContent = "heard: " + simsText(sims, 3);
+    if (res.verdict === "correct") {
+      counters.ok++; evLog.push("ok:" + target);
+      if (s.valid && res.st >= 0.85 && store.templates[target]) store.templates[target] = Dsp.blend(store.templates[target], s.feature, 0.15);
+      kbLesson.flash(target, "ok", 380); lockUntil = Date.now() + 380;
+      say(["Yes.", "Good.", "That's it.", "Right."][idx % 4], "ok");
+      idx++;
+      if (idx >= lesson.notes.length) { setTimeout(finishLesson, 450); }
+      else setTimeout(renderNote, 380);
+    } else if (res.verdict === "wrong") {
+      counters.bad++; mistakes[idx]++; evLog.push("bad:" + target + ">" + res.heard);
+      var h = Number(res.heard); kbLesson.flash(h, "bad", 550);
+      say("That was " + noteName(h) + ". Find " + noteName(target) + (FINGER[target] ? " — finger " + FINGER[target] : "") + ".", "bad");
+    } else {
+      if (!s.valid) return;   // a faint blip that did not match the target: stay silent
+      counters.unclear++; evLog.push("unclear:" + target);
+      say("Didn't catch that clearly. Try " + noteName(target) + " again.", "");
+    }
+  }
+  function maybeOfferSkip() { if (lesson && Date.now() - noteSince > 15000) $("btnSkipNote").hidden = false; }
+  $("btnSkipNote").addEventListener("click", function () {
+    mistakes[idx] += 1; idx++;
+    if (idx >= lesson.notes.length) finishLesson(); else renderNote();
+  });
+  $("btnRestart").addEventListener("click", function () { startLesson(lesson.id); });
+  $("lessonBack").addEventListener("click", function () { lesson = null; show("home"); renderHome(); });
+
+  function finishLesson() {
+    var total = lesson.notes.length, first = mistakes.filter(function (x) { return x === 0; }).length;
+    var acc = Math.round(100 * first / total), stars = acc >= 90 ? 3 : (acc >= 65 ? 2 : 1);
+    var secs = Math.round((Date.now() - startedAt) / 1000);
+    var prev = store.results[lesson.id];
+    if (!prev || acc > prev.acc) store.results[lesson.id] = { acc: acc, stars: stars };
+    save();
+    $("doneKicker").textContent = lesson.title;
+    $("doneTitle").textContent = stars === 3 ? "Clean run" : (stars === 2 ? "Nicely done" : "Finished — go again?");
+    $("doneStars").textContent = "★★★".slice(0, stars) + "☆☆☆".slice(0, 3 - stars);
+    $("doneAcc").textContent = acc + "%"; $("doneNotes").textContent = String(total);
+    $("doneTime").textContent = Math.floor(secs / 60) + ":" + ("0" + (secs % 60)).slice(-2);
+    $("doneNote").textContent = stars === 3 ? "Every note or nearly every note landed on the first try." : "First try means you hit the right key before any wrong one. Slow down and it will climb.";
+    var li = LESSONS.indexOf(lesson), nextL = LESSONS[li + 1];
+    $("doneNext").hidden = !nextL || !haveNotes(nextL.notes);
+    $("doneNext").onclick = function () { startLesson(nextL.id); };
+    $("doneAgain").onclick = function () { startLesson(lesson.id); };
+    $("doneHome").onclick = function () { $("doneOverlay").hidden = true; lesson = null; show("home"); renderHome(); };
+    $("doneOverlay").hidden = false;
+  }
+
+  /* ---------------- boot ---------------- */
+  show("home"); renderHome();
+  window.__pc = {
+    state: function () { return { view: view, learned: learnedCount(), learnIdx: learnIdx, idx: idx, total: lesson ? lesson.notes.length : 0, done: !$("doneOverlay").hidden, counters: counters, log: evLog.slice(), say: $("say").textContent, heard: $("lessonHeard").textContent, fluxMin: store.fluxMin }; },
+    startLearn: startLearn, startLesson: startLesson
+  };
+})();
+</script>
+</body>
+</html>
