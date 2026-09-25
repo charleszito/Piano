@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root {
     --ground:#F1F0EA; --panel:#FBFAF6; --panel-2:#E8E7DE; --ink:#1A1D19; --ink-soft:#5D625B; --ink-faint:#8C9089;
@@ -174,6 +175,62 @@
   .keys.dense .badge { width: 19px; height: 19px; font: 600 9px/19px "IBM Plex Mono", ui-monospace, monospace; bottom: 24px; }
   .keys.dense .wk.target .lbl { font-weight: 600; }
 
+  /* ---- home tabs ---- */
+  .tabbar { display: flex; gap: 3px; background: var(--panel-2); border-radius: 12px; padding: 4px; }
+  .tabbar button { flex: 1; min-height: 38px; padding: 0 10px; border: none; background: transparent; border-radius: 9px; color: var(--ink-soft); font-weight: 500; }
+  .tabbar button:hover:not(.active):not(:disabled) { background: transparent; color: var(--ink); }
+  .tabbar button.active { background: var(--panel); color: var(--ink); box-shadow: var(--shadow); }
+
+  /* ---- scales tab ---- */
+  .stier { padding-top: 22px; border-top: 1px solid var(--line); }
+  .stier:first-child { padding-top: 0; border-top: 0; }
+  .stier h3 { font-size: 21px; margin: 0 0 3px; }
+  .stier .sub { font: 500 11px "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .09em; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  .stier .tdesc { color: var(--ink-soft); font-size: 13.5px; max-width: 58ch; margin-bottom: 16px; }
+  .spiece { border-top: 1px solid var(--line); }
+  .stier .spiece:first-of-type { border-top: 0; }
+  .spiece > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 2px; cursor: pointer; list-style: none; min-height: 46px; }
+  .spiece > summary::-webkit-details-marker { display: none; }
+  .spiece > summary::after { content: "+"; font: 500 17px "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-faint); margin-left: 10px; flex: none; }
+  .spiece[open] > summary::after { content: "\2212"; }
+  .spiece .stitle { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .spiece h4 { font-size: 17px; margin: 0; }
+  .spiece .pmeta { font: 400 10.5px "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint); }
+  .spiece-body { display: flex; flex-direction: column; gap: 12px; padding: 0 2px 18px; }
+  .spiece .pdesc { color: var(--ink-soft); font-size: 13px; max-width: 58ch; }
+  .spiece .dlbtn { align-self: flex-start; min-height: 38px; padding: 0 14px; font-size: 13px; }
+  .sstaff { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .sstaff svg { display: block; }
+  .sstaff .staff-lines line { stroke: var(--staff); stroke-width: 1.1; }
+  .sstaff .ledger { stroke: var(--staff); stroke-width: 1.1; }
+  .sstaff .notehead { fill: var(--ink); }
+  .sstaff .bar { stroke: var(--staff); stroke-width: 1.3; }
+  .sstaff .clef { font-family: "Apple Symbols", "Noto Music", "Segoe UI Symbol", "Symbola", serif; fill: var(--staff); }
+  .sstaff .nlabel { font: 500 9.5px "IBM Plex Mono", ui-monospace, monospace; fill: var(--ink-soft); text-anchor: middle; }
+  .sstaff .finger { font: 600 10px "IBM Plex Mono", ui-monospace, monospace; fill: var(--accent); text-anchor: middle; }
+
+  /* ---- warm-ups tab ---- */
+  .wcard { display: flex; gap: 14px; padding: 16px 0; border-top: 1px solid var(--line); align-items: flex-start; }
+  .wcard:first-child { border-top: 0; padding-top: 0; }
+  .wcard .wicon { flex: none; width: 54px; height: 54px; }
+  .wcard .wbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .wcard .whead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .wcard h4 { font-size: 16px; margin: 0; }
+  .wcard .wmeta { font: 400 10.5px "IBM Plex Mono", ui-monospace, monospace; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+  .wcard .whow { font-size: 13.5px; color: var(--ink); margin: 2px 0 0; }
+  .wcard .wobj { font-size: 12.5px; color: var(--ink-soft); margin: 0; }
+  .wcard .wmove { font-size: 11.5px; color: var(--accent); margin: 0; }
+  .wchk { width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1.5px solid var(--line); background: var(--panel); cursor: pointer; position: relative; }
+  .wchk.on { background: var(--accent); border-color: var(--accent); }
+  .wchk.on::after { content: ""; position: absolute; left: 6px; top: 7px; width: 9px; height: 5px; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg); }
+  .wk-on { fill: var(--accent); opacity: .85; }
+  .wk-off { fill: none; stroke: var(--line); stroke-width: 1.4; }
+  .wico-a { fill: var(--ink); }
+  .wico-b { stroke: var(--ink-soft); stroke-width: 2; stroke-linecap: round; }
+  .wico-b2 { fill: var(--ink-faint); }
+  .wico-c { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+  .wico-n { font: 600 7px "IBM Plex Mono", ui-monospace, monospace; fill: var(--ink-soft); text-anchor: middle; }
+
   /* ---- timed play ---- */
   .tbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .beats { display: flex; gap: 9px; }
@@ -215,27 +272,46 @@
       <p class="soft">Play the highlighted keys on your own keyboard. The app listens, waits for the right notes, and tells you straight away whether you got them.</p>
     </header>
 
-    <div id="alert" class="alert" hidden></div>
+    <div class="micro">Practice</div>
+    <div class="tabbar" id="homeTabs" role="tablist">
+      <button type="button" id="tabBtnWarmups" class="active" role="tab" aria-selected="true">Warm-ups</button>
+      <button type="button" id="tabBtnLessons" role="tab" aria-selected="false">Lessons</button>
+      <button type="button" id="tabBtnScales" role="tab" aria-selected="false">Scales</button>
+    </div>
 
-    <section id="setupCard" class="setup">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <div class="micro" id="setupEyebrow">Step 1 &middot; about 40 seconds</div>
-        <h2 id="setupTitle">Teach it your keyboard</h2>
-      </div>
-      <p class="soft" id="setupBody"></p>
-      <div id="groupList" class="grps"></div>
-      <div class="mic-line"><span class="dot" id="micDot"></span><span id="micTxt">Microphone off</span><button class="quiet" id="btnMic" style="min-height:32px;margin-left:auto">Stop listening</button></div>
-    </section>
+    <div id="paneWarmups">
+      <p class="soft" style="max-width:56ch;margin-bottom:18px">Five quick ones to run before you start — not graded, not timed. Do them, check them off, move on.</p>
+      <div id="warmupsHost"></div>
+    </div>
 
-    <section id="lessonSections" class="secs"></section>
+    <div id="paneLessons" hidden style="display:flex;flex-direction:column;gap:22px">
+      <div id="alert" class="alert" hidden></div>
 
-    <details class="diag" id="diagBox">
-      <summary class="micro">Listening details</summary>
-      <pre id="diagTxt">Start listening to see live numbers.</pre>
-      <div class="row" style="margin-top:10px"><span class="micro">Timing offset</span><button class="quiet" id="offMinus" aria-label="Lower timing offset">&minus;</button><b class="mono" id="offVal">0 ms</b><button class="quiet" id="offPlus" aria-label="Raise timing offset">+</button></div>
-      <p class="micro" style="margin-top:6px;text-transform:none;letter-spacing:0">Timed lessons: if the app says you're late but it felt on the beat, press +. If it says early, press &minus;.</p>
-      <div class="row" style="margin-top:10px"><button class="quiet" id="btnReset">Forget my keyboard and start over</button></div>
-    </details>
+      <section id="setupCard" class="setup">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div class="micro" id="setupEyebrow">Step 1 &middot; about 40 seconds</div>
+          <h2 id="setupTitle">Teach it your keyboard</h2>
+        </div>
+        <p class="soft" id="setupBody"></p>
+        <div id="groupList" class="grps"></div>
+        <div class="mic-line"><span class="dot" id="micDot"></span><span id="micTxt">Microphone off</span><button class="quiet" id="btnMic" style="min-height:32px;margin-left:auto">Stop listening</button></div>
+      </section>
+
+      <section id="lessonSections" class="secs"></section>
+
+      <details class="diag" id="diagBox">
+        <summary class="micro">Listening details</summary>
+        <pre id="diagTxt">Start listening to see live numbers.</pre>
+        <div class="row" style="margin-top:10px"><span class="micro">Timing offset</span><button class="quiet" id="offMinus" aria-label="Lower timing offset">&minus;</button><b class="mono" id="offVal">0 ms</b><button class="quiet" id="offPlus" aria-label="Raise timing offset">+</button></div>
+        <p class="micro" style="margin-top:6px;text-transform:none;letter-spacing:0">Timed lessons: if the app says you're late but it felt on the beat, press +. If it says early, press &minus;.</p>
+        <div class="row" style="margin-top:10px"><button class="quiet" id="btnReset">Forget my keyboard and start over</button></div>
+      </details>
+    </div>
+
+    <div id="paneScales" hidden>
+      <p class="soft" style="max-width:56ch;margin-bottom:20px">Twelve short pieces, four to a tier, built from the scale material for that stage. No listening needed here — just notation to read and play at your own pace.</p>
+      <div id="scalesHost"></div>
+    </div>
   </section>
 
   <!-- ================= LEARN ================= -->
@@ -929,6 +1005,298 @@ if (typeof module !== "undefined") module.exports = Dsp;
     $("vLearn").style.display = v === "learn" ? "flex" : "none";
     $("vLesson").style.display = v === "lesson" ? "flex" : "none";
     window.scrollTo(0, 0);
+  }
+
+  /* ---------------- home tabs ---------------- */
+  var homeTab = "warmups", scalesBuilt = false;
+  function showHomeTab(t) {
+    homeTab = t;
+    $("tabBtnWarmups").className = t === "warmups" ? "active" : "";
+    $("tabBtnLessons").className = t === "lessons" ? "active" : "";
+    $("tabBtnScales").className = t === "scales" ? "active" : "";
+    $("tabBtnWarmups").setAttribute("aria-selected", String(t === "warmups"));
+    $("tabBtnLessons").setAttribute("aria-selected", String(t === "lessons"));
+    $("tabBtnScales").setAttribute("aria-selected", String(t === "scales"));
+    $("paneWarmups").hidden = t !== "warmups";
+    $("paneLessons").hidden = t !== "lessons";
+    $("paneScales").hidden = t !== "scales";
+    if (t === "scales" && !scalesBuilt) { renderScales(); scalesBuilt = true; }
+  }
+  $("tabBtnWarmups").addEventListener("click", function () { showHomeTab("warmups"); });
+  $("tabBtnLessons").addEventListener("click", function () { showHomeTab("lessons"); });
+  $("tabBtnScales").addEventListener("click", function () { showHomeTab("scales"); });
+
+  /* ---------------- warm-ups: static routine, checklist only ---------------- */
+  var WARMUPS = [
+    { id: "loosen", title: "Loosen Up", meta: "20–30 sec", icon: "loosen",
+      how: "Shake both hands out, roll your wrists in slow circles, gently stretch each finger back.",
+      obj: "Releases tension before you touch the keys — most bad habits start with a stiff wrist.",
+      move: "Move on whenever your hands feel loose. No target, just a reset." },
+    { id: "five", title: "Five-Finger Wiggle", meta: "C position · fingers 1–5", icon: "five",
+      how: "Press each key one at a time, finger 1 through 5 on C–D–E–F–G, then back down.",
+      obj: "Wakes up finger independence and checks your hand shape before real playing.",
+      move: "Move on after 2–3 passes, clean or not." },
+    { id: "thirds", title: "Rolling Thirds", meta: "C–E–G–E · a few reps", icon: "thirds",
+      how: "Play C, E, G, then back to E — the same shape as Garden Walk. Repeat a few times.",
+      obj: "Primes the hand for the skip-based reach used in most of your Level 1 pieces.",
+      move: "A few repeats is enough — this isn't meant to be mastered, just felt." },
+    { id: "scale", title: "Scale Sprint", meta: "C major · up and down", icon: "scale",
+      how: "Play the C major scale once, at whatever speed feels natural.",
+      obj: "Muscle-memory activation — a different job from the graded lessons.",
+      move: "One pass and you're done." },
+    { id: "pulse", title: "Pulse Tap", meta: "8 steady counts", icon: "pulse",
+      how: "Tap or clap 8 steady quarter notes while counting \u201c1-2-3-4\u201d in your head.",
+      obj: "Internalizes tempo before anything timed — ties into the timing offset in your lessons.",
+      move: "8 counts, then straight into practice." }
+  ];
+  function buildWarmupIcon(type) {
+    var svg = svgEl("svg", { viewBox: "0 0 64 64", "class": "wicon", role: "img" });
+    function keyRow(n, filled, x0, y0, kw, kh, gap) {
+      for (var i = 0; i < n; i++) {
+        var x = x0 + i * (kw + gap);
+        var isF = filled.indexOf(i) !== -1;
+        svg.appendChild(svgEl("rect", { x: x, y: y0, width: kw, height: kh, rx: 2, "class": isF ? "wk-on" : "wk-off" }));
+      }
+    }
+    if (type === "loosen") {
+      svg.appendChild(svgEl("rect", { x: 20, y: 34, width: 24, height: 18, rx: 9, "class": "wico-a" }));
+      [[22, 34, 22, 18], [29, 34, 29, 14], [36, 34, 36, 14], [43, 34, 43, 18]].forEach(function (f) {
+        svg.appendChild(svgEl("line", { x1: f[0], y1: f[1], x2: f[2], y2: f[3], "class": "wico-b" }));
+      });
+      svg.appendChild(svgEl("path", { d: "M12 20 Q6 30 12 40", "class": "wico-c", fill: "none" }));
+      svg.appendChild(svgEl("path", { d: "M52 20 Q58 30 52 40", "class": "wico-c", fill: "none" }));
+    } else if (type === "five") {
+      keyRow(5, [0, 1, 2, 3, 4], 6, 22, 9, 22, 2);
+      [1, 2, 3, 4, 5].forEach(function (n, i) {
+        var t = svgEl("text", { x: 6 + i * 11 + 4.5, y: 58, "class": "wico-n" }); t.textContent = n; svg.appendChild(t);
+      });
+    } else if (type === "thirds") {
+      keyRow(5, [0, 2, 4], 6, 22, 9, 22, 2);
+      svg.appendChild(svgEl("path", { d: "M10 18 Q32 6 54 18", "class": "wico-c", fill: "none" }));
+    } else if (type === "scale") {
+      keyRow(8, [0, 1, 2, 3, 4, 5, 6, 7], 4, 26, 6.5, 20, 1.5);
+      svg.appendChild(svgEl("path", { d: "M6 16 H58", "class": "wico-c" }));
+      svg.appendChild(svgEl("path", { d: "M54 12 L58 16 L54 20", "class": "wico-c", fill: "none" }));
+      svg.appendChild(svgEl("path", { d: "M10 12 L6 16 L10 20", "class": "wico-c", fill: "none" }));
+    } else if (type === "pulse") {
+      for (var i = 0; i < 4; i++) {
+        var cx = 12 + i * 14;
+        svg.appendChild(svgEl("circle", { cx: cx, cy: 36, r: i === 0 ? 5 : 4, "class": i === 0 ? "wico-a" : "wico-b2" }));
+      }
+      svg.appendChild(svgEl("path", { d: "M6 22 Q12 15 18 22", "class": "wico-c", fill: "none" }));
+    }
+    return svg;
+  }
+  function todayStr() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function loadWarmupState() {
+    try {
+      var raw = localStorage.getItem("pc_warmups");
+      if (!raw) return {};
+      var obj = JSON.parse(raw);
+      return obj.date === todayStr() ? (obj.done || {}) : {};
+    } catch (e) { return {}; }
+  }
+  function saveWarmupState(done) {
+    try { localStorage.setItem("pc_warmups", JSON.stringify({ date: todayStr(), done: done })); } catch (e) { }
+  }
+  function renderWarmups() {
+    var host = $("warmupsHost"); host.innerHTML = "";
+    var done = loadWarmupState();
+    WARMUPS.forEach(function (w) {
+      var card = document.createElement("div"); card.className = "wcard";
+      card.appendChild(buildWarmupIcon(w.icon));
+      var body = document.createElement("div"); body.className = "wbody";
+      var head = document.createElement("div"); head.className = "whead";
+      var htxt = document.createElement("div");
+      var h4 = document.createElement("h4"); h4.textContent = w.title;
+      var meta = document.createElement("div"); meta.className = "wmeta"; meta.textContent = w.meta;
+      htxt.appendChild(h4); htxt.appendChild(meta);
+      var chk = document.createElement("button"); chk.type = "button";
+      chk.className = "wchk" + (done[w.id] ? " on" : "");
+      chk.setAttribute("aria-label", "Mark " + w.title + " done");
+      chk.addEventListener("click", function () {
+        var st = loadWarmupState();
+        st[w.id] = !st[w.id];
+        saveWarmupState(st);
+        chk.className = "wchk" + (st[w.id] ? " on" : "");
+      });
+      head.appendChild(htxt); head.appendChild(chk);
+      var how = document.createElement("p"); how.className = "whow"; how.textContent = w.how;
+      var obj = document.createElement("p"); obj.className = "wobj"; obj.textContent = "Why: " + w.obj;
+      var move = document.createElement("p"); move.className = "wmove"; move.textContent = w.move;
+      body.appendChild(head); body.appendChild(how); body.appendChild(obj); body.appendChild(move);
+      card.appendChild(body);
+      host.appendChild(card);
+    });
+  }
+  renderWarmups();
+
+  /* ---------------- scales: static notation, no listening ---------------- */
+  var SCALE_TIERS = [
+    { title: "Level 1 — Feel It", sub: "C major only",
+      desc: "No theory talk yet — just the shape of C major under your hand. All white keys, thumb on middle C.",
+      pieces: [
+        { title: "Sunrise Steps", meta: "4/4 · C major", beats: 4,
+          desc: "The scale itself, up and back down. Thumb tucks under after finger 3 going up.",
+          notes: [60,62,64,65,67,69,71,72,72,71,69,67,65,64,62,60],
+          fing:  [1,2,3,1,2,3,4,5,5,4,3,2,1,3,2,1] },
+        { title: "Garden Walk", meta: "4/4 · C major", beats: 4,
+          desc: "Skips instead of steps — jumps by thirds so it starts to sound like a tune.",
+          notes: [60,64,67,64,65,69,72,69,67,71,74,71,72,69,64,60],
+          fing:  [1,3,5,3,1,3,5,3,1,3,5,3,5,3,1,1] },
+        { title: "Thumb Tuck Waltz", meta: "3/4 · C major", beats: 3,
+          desc: "In three — a gentler pace to focus purely on the thumb crossing under smoothly.",
+          notes: [60,62,64,65,67,69,71,72,71,69,67,65,64,62,60],
+          fing:  [1,2,3,1,2,3,4,5,4,3,2,1,3,2,1] },
+        { title: "Down the Steps", meta: "4/4 · C major", beats: 4,
+          desc: "Descending only — the direction beginners tend to neglect.",
+          notes: [72,71,69,67,65,64,62,60],
+          fing:  [5,4,3,2,1,3,2,1] }
+      ] },
+    { title: "Level 2 — Understand the Shape", sub: "G major · F major",
+      desc: "Whole, whole, half, whole, whole, whole, half. Same formula, new starting note — watch for the one black key each scale needs.",
+      pieces: [
+        { title: "G Major Sunbeam", meta: "4/4 · G major", beats: 4,
+          desc: "Same shape as Sunrise Steps, moved to G — one black key holds the pattern together.",
+          notes: [67,69,71,72,74,76,78,79,79,78,76,74,72,71,69,67],
+          fing:  [1,2,3,1,2,3,4,5,5,4,3,2,1,3,2,1] },
+        { title: "F Major Stroll", meta: "4/4 · F major", beats: 4,
+          desc: "F major's turn — the odd one out is a different black key this time. Notice the top note only reaches finger 4, not 5.",
+          notes: [65,67,69,70,72,74,76,77,77,76,74,72,70,69,67,65],
+          fing:  [1,2,3,4,1,2,3,4,4,3,2,1,4,3,2,1] },
+        { title: "Pattern Hunter", meta: "4/4 · C vs. G-major color", beats: 4,
+          desc: "The same four-note shape twice — once plain, once with the black key added. Listen for what changes.",
+          notes: [60,62,64,65,62,64,66,67,60,62,64,65,62,64,66,67],
+          fing:  [1,2,3,4,2,3,4,5,1,2,3,4,2,3,4,5] },
+        { title: "Half-Step Bridge", meta: "4/4 · C major, half-step focus", beats: 4,
+          desc: "Hovers around the two spots in a major scale with no black key between them.",
+          notes: [64,65,64,65,67,65,64,65,71,72,71,72,74,72,71,72],
+          fing:  [3,4,3,4,5,4,3,4,1,2,1,2,3,2,1,2] }
+      ] },
+    { title: "Level 3 — Degrees, Modes, Keys", sub: "A minor · D Dorian · modulation",
+      desc: "Scale degrees, the pull of the dominant back to the tonic, a first taste of a mode, and a melody that quietly changes key.",
+      pieces: [
+        { title: "A Minor Reflection", meta: "4/4 · A natural minor", beats: 4,
+          desc: "Same white keys as C major, rooted on A — the relative minor, a different mood from the same notes.",
+          notes: [69,71,72,74,76,77,79,81,81,79,77,76,74,72,71,69],
+          fing:  [1,2,3,1,2,3,4,5,5,4,3,2,1,3,2,1] },
+        { title: "Dominant Tension", meta: "4/4 · C major, degree 5 to 1", beats: 4,
+          desc: "Climbs to the dominant, then settles back to the tonic — the engine behind most cadences. The hand shifts slightly for the two A's.",
+          notes: [60,62,64,65,67,69,67,65,64,62,60,60],
+          fing:  [1,2,3,4,5,5,5,4,3,2,1,1] },
+        { title: "Dorian Wander", meta: "4/4 · D Dorian", beats: 4,
+          desc: "The same white keys again, rooted on D — a minor scale with a brighter 6th. Your first mode.",
+          notes: [62,64,65,67,69,71,72,74,74,72,71,69,67,65,64,62],
+          fing:  [1,2,3,1,2,3,4,5,5,4,3,2,1,3,2,1] },
+        { title: "Key Signature Detective", meta: "4/4 · C major to G major", beats: 4,
+          desc: "Starts in C major, then quietly slides into G major — listen for the moment the black key appears. The thumb tucks a second time where the key changes.",
+          notes: [60,62,64,65,67,69,71,72,74,76,78,79,78,76,74,72],
+          fing:  [1,2,3,1,2,3,4,5,1,2,3,4,4,3,2,1] }
+      ] }
+  ];
+  function drawScaleStaff(svg, notes, beatsPerMeasure, fingers) {
+    svg.innerHTML = "";
+    var y0 = 78, S = 6, dx = 40, x0 = 54, topClear = -10;
+    var width = x0 + notes.length * dx + 22;
+    svg.setAttribute("viewBox", topClear + " " + topClear + " " + width + " 164");
+    svg.setAttribute("width", width);
+    svg.setAttribute("height", 164);
+    var XC = { staff: "#3A3F38", ink: "#1A1D19", inkSoft: "#5D625B", accent: "#165C6B" };
+    var lines = svgEl("g", { "class": "staff-lines" }), i;
+    for (i = 0; i < 5; i++) lines.appendChild(svgEl("line", { x1: 34, x2: width - 8, y1: y0 - i * 12, y2: y0 - i * 12, stroke: XC.staff, "stroke-width": 1.1 }));
+    svg.appendChild(lines);
+    var clef = svgEl("text", { x: 2, y: y0 + 8, "class": "clef", "font-size": 54, fill: XC.staff }); clef.textContent = "𝄞"; svg.appendChild(clef);
+    var g = svgEl("g");
+    notes.forEach(function (m, k) {
+      var x = x0 + k * dx, o = diatonic(m) - TREBLE_B, y = y0 - o * S, e;
+      if (o <= -2) for (e = -2; e >= o; e -= 2) g.appendChild(svgEl("line", { x1: x - 10, x2: x + 10, y1: y0 - e * S, y2: y0 - e * S, "class": "ledger", stroke: XC.staff, "stroke-width": 1.1 }));
+      if (o >= 10) for (e = 10; e <= o; e += 2) g.appendChild(svgEl("line", { x1: x - 10, x2: x + 10, y1: y0 - e * S, y2: y0 - e * S, "class": "ledger", stroke: XC.staff, "stroke-width": 1.1 }));
+      g.appendChild(svgEl("ellipse", { cx: x, cy: y, rx: 7, ry: 5, transform: "rotate(-18 " + x + " " + y + ")", "class": "notehead", fill: XC.ink }));
+      var t = svgEl("text", { x: x, y: y0 + 34, "class": "nlabel", fill: XC.inkSoft }); t.textContent = noteLetter(m); g.appendChild(t);
+      if (fingers && fingers[k]) {
+        var fy = Math.min(y - 14, y0 - 44);
+        var ft = svgEl("text", { x: x, y: fy, "class": "finger", fill: XC.accent }); ft.textContent = String(fingers[k]); g.appendChild(ft);
+      }
+      if ((k + 1) % beatsPerMeasure === 0 && k !== notes.length - 1) {
+        var bx = x + dx / 2 + 4;
+        g.appendChild(svgEl("line", { x1: bx, x2: bx, y1: y0 - 48, y2: y0, "class": "bar", stroke: XC.staff, "stroke-width": 1.3 }));
+      }
+    });
+    svg.appendChild(g);
+    svg.appendChild(svgEl("line", { x1: width - 12, x2: width - 12, y1: y0 - 48, y2: y0, "class": "bar", stroke: XC.staff, "stroke-width": 2 }));
+    return { width: width, height: 164 };
+  }
+  function pieceSlug(title) { return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+  function renderScales() {
+    var host = $("scalesHost"); host.innerHTML = "";
+    SCALE_TIERS.forEach(function (tier) {
+      var td = document.createElement("div"); td.className = "stier";
+      var sub = document.createElement("div"); sub.className = "sub"; sub.textContent = tier.sub;
+      var h3 = document.createElement("h3"); h3.textContent = tier.title;
+      var desc = document.createElement("p"); desc.className = "tdesc"; desc.textContent = tier.desc;
+      td.appendChild(sub); td.appendChild(h3); td.appendChild(desc);
+      tier.pieces.forEach(function (p) {
+        var d = document.createElement("details"); d.className = "spiece";
+        var sm = document.createElement("summary");
+        var stitle = document.createElement("div"); stitle.className = "stitle";
+        var h4 = document.createElement("h4"); h4.textContent = p.title;
+        var meta = document.createElement("div"); meta.className = "pmeta"; meta.textContent = p.meta;
+        stitle.appendChild(h4); stitle.appendChild(meta);
+        sm.appendChild(stitle); d.appendChild(sm);
+
+        var body = document.createElement("div"); body.className = "spiece-body";
+        var pdesc = document.createElement("p"); pdesc.className = "pdesc"; pdesc.textContent = p.desc;
+        var staffWrap = document.createElement("div"); staffWrap.className = "sstaff";
+        var svg = svgEl("svg", { role: "img", "aria-label": p.title + " sheet music" });
+        staffWrap.appendChild(svg);
+        var dlBtn = document.createElement("button"); dlBtn.type = "button"; dlBtn.className = "quiet dlbtn"; dlBtn.textContent = "Download PDF";
+        dlBtn.addEventListener("click", function () { downloadPiecePDF(p, tier); });
+        body.appendChild(pdesc); body.appendChild(staffWrap); body.appendChild(dlBtn);
+        d.appendChild(body);
+        td.appendChild(d);
+        drawScaleStaff(svg, p.notes, p.beats, p.fing);
+      });
+      host.appendChild(td);
+    });
+  }
+
+  /* ---------------- scales: per-piece PDF export ---------------- */
+  function downloadPiecePDF(p, tier) {
+    var svg = svgEl("svg", {});
+    var dim = drawScaleStaff(svg, p.notes, p.beats, p.fing);
+    var xml = '<?xml version="1.0" encoding="UTF-8"?>' + new XMLSerializer().serializeToString(svg);
+    var svg64 = btoa(unescape(encodeURIComponent(xml)));
+    var img = new Image();
+    img.onload = function () {
+      var scale = 3;
+      var canvas = document.createElement("canvas");
+      canvas.width = dim.width * scale; canvas.height = dim.height * scale;
+      var ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      var png = canvas.toDataURL("image/png");
+      var jsPDFCtor = window.jspdf && window.jspdf.jsPDF;
+      if (!jsPDFCtor) { window.open(png, "_blank"); return; }
+      var pxToPt = 0.75, marginX = 42;
+      var pw = dim.width * pxToPt, ph = dim.height * pxToPt;
+      var pageW = Math.max(pw + marginX * 2, 320);
+      var meas = new jsPDFCtor({ unit: "pt", format: [pageW, 400] });
+      meas.setFont("helvetica", "normal"); meas.setFontSize(10.5);
+      var descLines = meas.splitTextToSize(p.desc, pageW - marginX * 2);
+      var top = 74 + descLines.length * 13 + 14;
+      var pageH = top + ph + 40;
+      var doc = new jsPDFCtor({ unit: "pt", format: [pageW, pageH] });
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(26, 29, 25);
+      doc.setFontSize(18); doc.text(p.title, marginX, 38);
+      doc.setFontSize(10); doc.setTextColor(140, 144, 137);
+      doc.text((tier ? tier.title + " · " : "") + p.meta, marginX, 56);
+      doc.setFontSize(10.5); doc.setTextColor(93, 98, 91);
+      doc.text(descLines, marginX, 74);
+      doc.addImage(png, "PNG", marginX, top, pw, ph);
+      doc.save("piano-coach-" + pieceSlug(p.title) + ".pdf");
+    };
+    img.src = "data:image/svg+xml;base64," + svg64;
   }
 
   /* ---------------- home ---------------- */
